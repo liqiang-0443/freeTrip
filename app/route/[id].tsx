@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { RouteDiagram } from "@/components/RouteDiagram";
 import { StopTimeline } from "@/components/StopTimeline";
 import { routeSeed } from "@/data/routes.seed";
 import { summarizeRouteStops } from "@/domain/routes";
@@ -138,6 +139,8 @@ export default function RouteDetailScreen() {
             </Pressable>
           ) : null}
         </View>
+
+        <RouteDiagram route={route} />
 
         <View style={styles.panel}>
           <Text style={styles.sectionTitle}>行程时间线</Text>

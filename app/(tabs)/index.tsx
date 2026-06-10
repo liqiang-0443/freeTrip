@@ -16,7 +16,6 @@ export default function RecommendationsScreen() {
   const [durationType, setDurationType] = useState<DurationType>("one_day");
   const [selectedTags, setSelectedTags] = useState<string[]>(["自然"]);
   const { states } = useUserRoutes();
-  const runtime = useRouteRuntimeInfo(routeSeed);
 
   const rankedRoutes = useMemo(
     () =>
@@ -27,6 +26,11 @@ export default function RecommendationsScreen() {
       }),
     [durationType, selectedTags, states]
   );
+  const runtimeRoutes = useMemo(
+    () => rankedRoutes.slice(0, 3).map((item) => item.route),
+    [rankedRoutes]
+  );
+  const runtime = useRouteRuntimeInfo(runtimeRoutes);
 
   function toggleTag(tag: string) {
     setSelectedTags((current) =>
