@@ -19,15 +19,39 @@ import { summarizeRouteStops } from "@/domain/routes";
 import { groupRoutePhotosByStop } from "@/domain/travelJournal";
 import { formatRuntimeDriving, useRouteRuntimeInfo } from "@/hooks/useRouteRuntimeInfo";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
+import { buildRouteFromDiscoveredPoi } from "@/services/amapPoiSearch";
 import { buildAmapNavigationUri } from "@/services/amapRoutes";
 import { colors, radius, spacing } from "@/styles/theme";
 
 export default function RouteDetailScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id: string }>();
-  const route = routeSeed.find((item) => item.id === params.id);
+  const params = useLocalSearchParams<{
+    id: string;
+    poiId?: string;
+    poiName?: string;
+    poiType?: string;
+    poiAddress?: string;
+    poiDistrict?: string;
+    poiLongitude?: string;
+    poiLatitude?: string;
+  }>();
+  const discoveredRoute = useMemo(
+    () => buildDiscoveredRouteFromParams(params),
+    [
+      params.id,
+      params.poiId,
+      params.poiName,
+      params.poiType,
+      params.poiAddress,
+      params.poiDistrict,
+      params.poiLongitude,
+      params.poiLatitude
+    ]
+  );
+  const route = routeSeed.find((item) => item.id === params.id) ?? discoveredRoute;
+  const isDiscoveredRoute = Boolean(discoveredRoute);
   const { states, actions } = useUserRoutes();
-  const state = route ? states[route.id] : undefined;
+  const state = route && !isDiscoveredRoute ? states[route.id] : undefined;
   const runtimeRoutes = useMemo(() => (route ? [route] : []), [route]);
   const runtime = useRouteRuntimeInfo(runtimeRoutes);
   const runtimeDriving = route ? formatRuntimeDriving(runtime.infoByRouteId[route.id]) : undefined;
@@ -65,6 +89,10 @@ export default function RouteDetailScreen() {
   const photoGroups = groupRoutePhotosByStop(selectedRoute, state);
 
   async function addPhoto() {
+    if (isDiscoveredRoute) {
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8
@@ -121,19 +149,31 @@ export default function RouteDetailScreen() {
 
         <View style={styles.actions}>
           <ActionButton
-            label={state?.collected ? "已收藏" : "收藏"}
+            label={isDiscoveredRoute ? "临时路线" : state?.collected ? "已收藏" : "收藏"}
             icon={state?.collected ? "bookmark" : "bookmark-outline"}
-            onPress={() => actions.toggleCollected(route.id)}
+            onPress={() => {
+              if (!isDiscoveredRoute) {
+                actions.toggleCollected(route.id);
+              }
+            }}
           />
           <ActionButton
-            label={state?.plannedDate ? `计划 ${state.plannedDate}` : "计划明天"}
+            label={isDiscoveredRoute ? "先看车程" : state?.plannedDate ? `计划 ${state.plannedDate}` : "计划明天"}
             icon="calendar-outline"
-            onPress={() => actions.planRoute(route.id, tomorrow)}
+            onPress={() => {
+              if (!isDiscoveredRoute) {
+                actions.planRoute(route.id, tomorrow);
+              }
+            }}
           />
           <ActionButton
-            label={state?.visitedAt ? "已去过" : "标记去过"}
+            label={isDiscoveredRoute ? "未入库" : state?.visitedAt ? "已去过" : "标记去过"}
             icon={state?.visitedAt ? "checkmark-circle" : "checkmark-circle-outline"}
-            onPress={() => actions.markVisited(route.id, new Date().toISOString().slice(0, 10))}
+            onPress={() => {
+              if (!isDiscoveredRoute) {
+                actions.markVisited(route.id, new Date().toISOString().slice(0, 10));
+              }
+            }}
           />
         </View>
 
@@ -177,7 +217,7 @@ export default function RouteDetailScreen() {
           <View style={styles.photoHeader}>
             <Text style={styles.sectionTitle}>照片</Text>
             <Pressable style={styles.smallButton} onPress={addPhoto}>
-              <Text style={styles.smallButtonText}>添加照片</Text>
+              <Text style={styles.smallButtonText}>{isDiscoveredRoute ? "入库后添加" : "添加照片"}</Text>
             </Pressable>
           </View>
           <Text style={styles.emptyText}>先选停靠点，再添加照片。</Text>
@@ -270,6 +310,40 @@ function getRuntimeStatusText(
   }
 
   return "未配置高德 Web 服务 Key，当前使用内置路线估算；配置 EXPO_PUBLIC_AMAP_WEB_KEY 后会自动拉取实时驾驶数据。";
+}
+
+function buildDiscoveredRouteFromParams(params: {
+  id?: string;
+  poiId?: string;
+  poiName?: string;
+  poiType?: string;
+  poiAddress?: string;
+  poiDistrict?: string;
+  poiLongitude?: string;
+  poiLatitude?: string;
+}) {
+  const longitude = Number(params.poiLongitude);
+  const latitude = Number(params.poiLatitude);
+
+  if (
+    !params.id?.startsWith("discovered-") ||
+    !params.poiId ||
+    !params.poiName ||
+    !Number.isFinite(longitude) ||
+    !Number.isFinite(latitude)
+  ) {
+    return undefined;
+  }
+
+  return buildRouteFromDiscoveredPoi({
+    id: params.poiId,
+    name: params.poiName,
+    type: params.poiType || undefined,
+    address: params.poiAddress || undefined,
+    district: params.poiDistrict || undefined,
+    longitude,
+    latitude
+  });
 }
 
 const durationLabels = {
