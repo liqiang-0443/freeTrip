@@ -3,6 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
 import {
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,7 +15,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { StopTimeline } from "@/components/StopTimeline";
 import { routeSeed } from "@/data/routes.seed";
 import { summarizeRouteStops } from "@/domain/routes";
+import { formatRuntimeDriving, useRouteRuntimeInfo } from "@/hooks/useRouteRuntimeInfo";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
+import { buildAmapNavigationUri } from "@/services/amapRoutes";
 import { colors, radius, spacing } from "@/styles/theme";
 
 export default function RouteDetailScreen() {
@@ -23,6 +26,10 @@ export default function RouteDetailScreen() {
   const route = routeSeed.find((item) => item.id === params.id);
   const { states, actions } = useUserRoutes();
   const state = route ? states[route.id] : undefined;
+  const runtimeRoutes = useMemo(() => (route ? [route] : []), [route]);
+  const runtime = useRouteRuntimeInfo(runtimeRoutes);
+  const runtimeDriving = route ? formatRuntimeDriving(runtime.infoByRouteId[route.id]) : undefined;
+  const runtimeError = route ? runtime.errorByRouteId[route.id] : undefined;
 
   const tomorrow = useMemo(() => {
     const date = new Date();
@@ -45,6 +52,8 @@ export default function RouteDetailScreen() {
   }
 
   const selectedRoute = route;
+  const navigationUri = buildAmapNavigationUri(selectedRoute);
+  const runtimeStatusText = getRuntimeStatusText(runtime.status, runtimeError, Boolean(runtimeDriving));
 
   async function addPhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -60,6 +69,14 @@ export default function RouteDetailScreen() {
         stopId: selectedRoute.stops.find((stop) => stop.role === "destination")?.id
       });
     }
+  }
+
+  async function openAmapNavigation() {
+    if (!navigationUri) {
+      return;
+    }
+
+    await Linking.openURL(navigationUri);
   }
 
   return (
@@ -81,9 +98,15 @@ export default function RouteDetailScreen() {
           <Text style={styles.sectionTitle}>路线</Text>
           <Text style={styles.path}>{summarizeRouteStops(route)}</Text>
           <View style={styles.metricRow}>
-            <Metric label="总驾驶" value={`${Math.round((route.estimatedDrivingMinutes ?? 0) / 60)}h`} />
+            <Metric
+              label={runtimeDriving ? "高德车程" : "总驾驶"}
+              value={runtimeDriving ? runtimeDriving.duration : `${Math.round((route.estimatedDrivingMinutes ?? 0) / 60)}h`}
+            />
+            <Metric
+              label={runtimeDriving ? "高德里程" : "数据来源"}
+              value={runtimeDriving ? runtimeDriving.distance : "内置估算"}
+            />
             <Metric label="建议出发" value={route.recommendedStartTime ?? "灵活"} />
-            <Metric label="路线类型" value={durationLabels[route.durationType]} />
           </View>
         </View>
 
@@ -106,10 +129,14 @@ export default function RouteDetailScreen() {
         </View>
 
         <View style={styles.mapPlaceholder}>
-          <Text style={styles.mapTitle}>地图和实时路线增强</Text>
-          <Text style={styles.mapText}>
-            第一版先展示路线骨架。下一步接高德后，这里会显示实时车程、停车、餐饮和外部导航入口。
-          </Text>
+          <Text style={styles.mapTitle}>高德路线增强</Text>
+          <Text style={styles.mapText}>{runtimeStatusText}</Text>
+          {navigationUri ? (
+            <Pressable style={styles.navigationButton} onPress={openAmapNavigation}>
+              <Ionicons name="navigate" size={18} color="#ffffff" />
+              <Text style={styles.navigationButtonText}>打开高德导航</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.panel}>
@@ -181,6 +208,26 @@ function ActionButton({
       <Text style={styles.actionText}>{label}</Text>
     </Pressable>
   );
+}
+
+function getRuntimeStatusText(
+  status: "disabled" | "loading" | "ready" | "error",
+  error: string | undefined,
+  hasRuntimeDriving: boolean
+) {
+  if (hasRuntimeDriving) {
+    return "已接入高德 Web 服务，当前显示按路线停靠点计算的实时驾驶里程和车程。";
+  }
+
+  if (status === "loading") {
+    return "正在向高德 Web 服务获取这条路线的驾驶里程和车程。";
+  }
+
+  if (status === "error") {
+    return `高德路线暂时不可用，页面继续使用内置估算。${error ? `原因：${error}` : ""}`;
+  }
+
+  return "未配置高德 Web 服务 Key，当前使用内置路线估算；配置 EXPO_PUBLIC_AMAP_WEB_KEY 后会自动拉取实时驾驶数据。";
 }
 
 const durationLabels = {
@@ -314,6 +361,21 @@ const styles = StyleSheet.create({
   mapText: {
     color: "#e8f0ea",
     lineHeight: 21
+  },
+  navigationButton: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm
+  },
+  navigationButtonText: {
+    color: "#ffffff",
+    fontWeight: "900"
   },
   listItem: {
     color: colors.text,

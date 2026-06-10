@@ -6,6 +6,7 @@ import { RouteFilters } from "@/components/RouteFilters";
 import { routeSeed } from "@/data/routes.seed";
 import { rankRoutes } from "@/domain/recommendations";
 import type { DurationType } from "@/domain/routes";
+import { formatRuntimeDriving, useRouteRuntimeInfo } from "@/hooks/useRouteRuntimeInfo";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
 import { colors, spacing } from "@/styles/theme";
 
@@ -15,6 +16,7 @@ export default function RecommendationsScreen() {
   const [durationType, setDurationType] = useState<DurationType>("one_day");
   const [selectedTags, setSelectedTags] = useState<string[]>(["自然"]);
   const { states } = useUserRoutes();
+  const runtime = useRouteRuntimeInfo(routeSeed);
 
   const rankedRoutes = useMemo(
     () =>
@@ -55,7 +57,12 @@ export default function RecommendationsScreen() {
 
         <View style={styles.list}>
           {rankedRoutes.map((item) => (
-            <RouteCard key={item.route.id} item={item} state={states[item.route.id]} />
+            <RouteCard
+              key={item.route.id}
+              item={item}
+              state={states[item.route.id]}
+              runtimeDriving={formatRuntimeDriving(runtime.infoByRouteId[item.route.id])}
+            />
           ))}
         </View>
       </ScrollView>
