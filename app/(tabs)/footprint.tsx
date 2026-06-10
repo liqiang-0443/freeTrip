@@ -2,12 +2,14 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
 import { routeSeed } from "@/data/routes.seed";
+import { buildFootprintSummary, groupRoutePhotosByStop } from "@/domain/travelJournal";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
 import { colors, radius, spacing } from "@/styles/theme";
 
 export default function FootprintScreen() {
   const { states } = useUserRoutes();
   const visitedRoutes = routeSeed.filter((route) => states[route.id]?.visitedAt);
+  const summary = buildFootprintSummary(routeSeed, states);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -19,27 +21,50 @@ export default function FootprintScreen() {
 
         <View style={styles.mapPanel}>
           <Text style={styles.mapTitle}>西安周边足迹</Text>
-          <Text style={styles.mapCount}>{visitedRoutes.length}</Text>
-          <Text style={styles.mapHint}>已去过路线</Text>
+          <View style={styles.summaryRow}>
+            <SummaryMetric value={summary.visitedRouteCount} label="路线" />
+            <SummaryMetric value={summary.visitedStopCount} label="停靠点" />
+            <SummaryMetric value={summary.photoCount} label="照片" />
+          </View>
+          {summary.unassignedPhotoCount > 0 ? (
+            <Text style={styles.mapHint}>{summary.unassignedPhotoCount} 张照片还没有归属停靠点</Text>
+          ) : (
+            <Text style={styles.mapHint}>按路线和停靠点沉淀你的自驾记录</Text>
+          )}
         </View>
 
         {visitedRoutes.length === 0 ? (
           <EmptyState title="还没有足迹" body="在路线详情里点“标记去过”，这里会显示你的自驾记录。" />
         ) : (
-          visitedRoutes.map((route) => (
-            <View key={route.id} style={styles.route}>
-              <Text style={styles.routeTitle}>{route.title}</Text>
-              <Text style={styles.visitedAt}>去过：{states[route.id]?.visitedAt}</Text>
-              {route.stops.map((stop) => (
-                <Text key={stop.id} style={styles.stop}>
-                  {stop.order + 1}. {stop.name}
-                </Text>
-              ))}
-            </View>
-          ))
+          visitedRoutes.map((route) => {
+            const groups = groupRoutePhotosByStop(route, states[route.id]);
+            return (
+              <View key={route.id} style={styles.route}>
+                <Text style={styles.routeTitle}>{route.title}</Text>
+                <Text style={styles.visitedAt}>去过：{states[route.id]?.visitedAt}</Text>
+                {groups.map((group, index) => (
+                  <View key={group.stop?.id ?? "unassigned"} style={styles.stopRow}>
+                    <Text style={styles.stop}>
+                      {group.stop ? `${index + 1}. ${group.stop.name}` : "未归类照片"}
+                    </Text>
+                    <Text style={styles.photoCount}>{group.photos.length} 张</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function SummaryMetric({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={styles.summaryMetric}>
+      <Text style={styles.mapCount}>{value}</Text>
+      <Text style={styles.mapHint}>{label}</Text>
+    </View>
   );
 }
 
@@ -71,15 +96,28 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
-    gap: spacing.xs
+    gap: spacing.md,
+    padding: spacing.lg
   },
   mapTitle: {
     color: colors.primaryDark,
     fontWeight: "800"
   },
+  summaryRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    alignSelf: "stretch"
+  },
+  summaryMetric: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.md
+  },
   mapCount: {
     color: colors.primary,
-    fontSize: 48,
+    fontSize: 30,
     fontWeight: "900"
   },
   mapHint: {
@@ -102,8 +140,24 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontWeight: "700"
   },
+  stopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md
+  },
   stop: {
+    flex: 1,
     color: colors.muted,
     lineHeight: 20
+  },
+  photoCount: {
+    color: colors.primaryDark,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    fontSize: 12,
+    fontWeight: "800"
   }
 });

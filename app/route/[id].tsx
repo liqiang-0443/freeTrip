@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Image,
   Linking,
@@ -16,6 +16,7 @@ import { RouteDiagram } from "@/components/RouteDiagram";
 import { StopTimeline } from "@/components/StopTimeline";
 import { routeSeed } from "@/data/routes.seed";
 import { summarizeRouteStops } from "@/domain/routes";
+import { groupRoutePhotosByStop } from "@/domain/travelJournal";
 import { formatRuntimeDriving, useRouteRuntimeInfo } from "@/hooks/useRouteRuntimeInfo";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
 import { buildAmapNavigationUri } from "@/services/amapRoutes";
@@ -31,6 +32,7 @@ export default function RouteDetailScreen() {
   const runtime = useRouteRuntimeInfo(runtimeRoutes);
   const runtimeDriving = route ? formatRuntimeDriving(runtime.infoByRouteId[route.id]) : undefined;
   const runtimeError = route ? runtime.errorByRouteId[route.id] : undefined;
+  const [selectedPhotoStopId, setSelectedPhotoStopId] = useState<string | undefined>();
 
   const tomorrow = useMemo(() => {
     const date = new Date();
@@ -55,6 +57,12 @@ export default function RouteDetailScreen() {
   const selectedRoute = route;
   const navigationUri = buildAmapNavigationUri(selectedRoute);
   const runtimeStatusText = getRuntimeStatusText(runtime.status, runtimeError, Boolean(runtimeDriving));
+  const sortedStops = [...selectedRoute.stops].sort((left, right) => left.order - right.order);
+  const defaultPhotoStopId =
+    selectedPhotoStopId ??
+    selectedRoute.stops.find((stop) => stop.role === "destination")?.id ??
+    sortedStops[0]?.id;
+  const photoGroups = groupRoutePhotosByStop(selectedRoute, state);
 
   async function addPhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -67,7 +75,7 @@ export default function RouteDetailScreen() {
         id: `${Date.now()}`,
         uri: result.assets[0].uri,
         addedAt: new Date().toISOString(),
-        stopId: selectedRoute.stops.find((stop) => stop.role === "destination")?.id
+        stopId: defaultPhotoStopId
       });
     }
   }
@@ -172,14 +180,45 @@ export default function RouteDetailScreen() {
               <Text style={styles.smallButtonText}>添加照片</Text>
             </Pressable>
           </View>
+          <Text style={styles.emptyText}>先选停靠点，再添加照片。</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stopPicker}>
+            {sortedStops.map((stop) => {
+              const selected = defaultPhotoStopId === stop.id;
+              return (
+                <Pressable
+                  key={stop.id}
+                  style={[styles.stopChip, selected ? styles.stopChipSelected : null]}
+                  onPress={() => setSelectedPhotoStopId(stop.id)}
+                >
+                  <Text style={[styles.stopChipText, selected ? styles.stopChipTextSelected : null]}>
+                    {stop.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
           {state?.photos?.length ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photos}>
-              {state.photos.map((photo) => (
-                <Image key={photo.id} source={{ uri: photo.uri }} style={styles.photo} />
+            <View style={styles.photoGroups}>
+              {photoGroups.map((group) => (
+                <View key={group.stop?.id ?? "unassigned"} style={styles.photoGroup}>
+                  <View style={styles.photoGroupHeader}>
+                    <Text style={styles.photoGroupTitle}>{group.stop?.name ?? "未归类照片"}</Text>
+                    <Text style={styles.photoGroupCount}>{group.photos.length} 张</Text>
+                  </View>
+                  {group.photos.length ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photos}>
+                      {group.photos.map((photo) => (
+                        <Image key={photo.id} source={{ uri: photo.uri }} style={styles.photo} />
+                      ))}
+                    </ScrollView>
+                  ) : (
+                    <Text style={styles.emptyText}>这个停靠点还没有照片。</Text>
+                  )}
+                </View>
               ))}
-            </ScrollView>
+            </View>
           ) : (
-            <Text style={styles.emptyText}>去过之后可以把照片挂到这条路线下面。</Text>
+            <Text style={styles.emptyText}>去过之后可以把照片挂到具体停靠点下面。</Text>
           )}
         </View>
       </ScrollView>
@@ -403,6 +442,51 @@ const styles = StyleSheet.create({
   },
   smallButtonText: {
     color: "#ffffff",
+    fontWeight: "800"
+  },
+  stopPicker: {
+    gap: spacing.sm
+  },
+  stopChip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface
+  },
+  stopChipSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
+  },
+  stopChipText: {
+    color: colors.primaryDark,
+    fontWeight: "800"
+  },
+  stopChipTextSelected: {
+    color: "#ffffff"
+  },
+  photoGroups: {
+    gap: spacing.md
+  },
+  photoGroup: {
+    gap: spacing.sm
+  },
+  photoGroupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md
+  },
+  photoGroupTitle: {
+    flex: 1,
+    color: colors.text,
+    fontWeight: "900",
+    fontSize: 15
+  },
+  photoGroupCount: {
+    color: colors.muted,
+    fontSize: 12,
     fontWeight: "800"
   },
   photos: {
