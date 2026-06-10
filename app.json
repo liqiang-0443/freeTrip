@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "FreeTrip",
+    "slug": "freetrip",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "freetrip",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.liqiang.freetrip",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "FreeTrip uses your photos so you can attach memories to visited routes.",
+        "NSCameraUsageDescription": "FreeTrip can use the camera when you add a trip photo."
+      }
+    },
+    "android": {
+      "package": "com.liqiang.freetrip",
+      "permissions": [
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FreeTrip uses your photos so you can attach memories to visited routes.",
+          "cameraPermission": "FreeTrip can use the camera when you add a trip photo."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
