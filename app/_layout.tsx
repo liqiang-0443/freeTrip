@@ -1,8 +1,5 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { configureAmapNativePrivacy } from "@/services/amapNativePrivacy";
-
-configureAmapNativePrivacy();
 
 export default function RootLayout() {
   return (

@@ -11,7 +11,7 @@ export function FootprintMapView({ model }: FootprintMapViewProps) {
   return (
     <View style={styles.wrap}>
       <Ionicons name="map" size={28} color={colors.primaryDark} />
-      <Text style={styles.title}>足迹地图准备中</Text>
+      <Text style={styles.title}>Web 足迹地图准备中</Text>
       <Text style={styles.body}>
         已记录 {model.visitedRouteCount} 条路线、{model.markers.length} 个地点。
       </Text>
