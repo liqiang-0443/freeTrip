@@ -43,13 +43,14 @@ export function useRoutePhotos(routeId: string | undefined) {
         return [];
       }
 
-      const previews = Array.from(files).map((file) =>
-        createSessionPhoto(routeId, stopId, file)
+      const fileList = Array.from(files);
+      const previews = await Promise.all(
+        fileList.map((file) => createSessionPhoto(routeId, stopId, file))
       );
       setSessionPhotos((current) => mergePhotos(current, previews));
 
       try {
-        const added = await getRoutePhotoLibrary().addRoutePhotos(routeId, stopId, files);
+        const added = await getRoutePhotoLibrary().addRoutePhotos(routeId, stopId, fileList);
         setSessionPhotos((current) =>
           current.filter((photo) => !previews.some((preview) => preview.id === photo.id))
         );
@@ -71,11 +72,11 @@ export function useRoutePhotos(routeId: string | undefined) {
   };
 }
 
-function createSessionPhoto(
+async function createSessionPhoto(
   routeId: string,
   stopId: string | undefined,
   file: File
-): LocalRoutePhoto {
+): Promise<LocalRoutePhoto> {
   return {
     id: `session-${routeId}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     routeId,
@@ -84,11 +85,27 @@ function createSessionPhoto(
     type: file.type || "image/jpeg",
     size: file.size,
     addedAt: new Date().toISOString(),
-    dataUrl:
-      typeof URL !== "undefined" && typeof URL.createObjectURL === "function"
-        ? URL.createObjectURL(file)
-        : ""
+    dataUrl: await readPreviewDataUrl(file)
   };
+}
+
+function readPreviewDataUrl(file: File): Promise<string> {
+  if (typeof FileReader !== "undefined") {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => resolve(createObjectUrlPreview(file));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  return Promise.resolve(createObjectUrlPreview(file));
+}
+
+function createObjectUrlPreview(file: File): string {
+  return typeof URL !== "undefined" && typeof URL.createObjectURL === "function"
+    ? URL.createObjectURL(file)
+    : "";
 }
 
 function mergePhotos(left: LocalRoutePhoto[], right: LocalRoutePhoto[]) {

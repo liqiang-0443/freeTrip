@@ -17,9 +17,9 @@ export default function TabsLayout() {
           height: 64,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          borderRadius: 18,
+          borderRadius: 22,
           backgroundColor: "rgba(255, 255, 255, 0.96)",
-          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
+          boxShadow: "0 14px 34px rgba(15, 63, 50, 0.18)",
           elevation: 12,
           zIndex: 50
         },

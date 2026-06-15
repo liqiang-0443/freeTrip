@@ -1,4 +1,4 @@
-const CACHE_NAME = "freetrip-pwa-v2";
+const CACHE_NAME = "freetrip-pwa-v3";
 const APP_SHELL = ["/", "/manifest.json", "/icons/icon.svg", "/icons/maskable-icon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -19,6 +19,11 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
+    return;
+  }
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(fetch(event.request).catch(() => caches.match("/")));
     return;
   }
 

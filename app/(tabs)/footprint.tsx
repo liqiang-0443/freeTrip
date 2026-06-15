@@ -55,27 +55,28 @@ const styles = StyleSheet.create({
     top: spacing.md,
     left: spacing.md,
     right: spacing.md,
-    backgroundColor: "rgba(255, 255, 255, 0.94)",
-    borderRadius: radius.md,
+    backgroundColor: "rgba(15, 63, 50, 0.92)",
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "rgba(217, 223, 216, 0.72)",
+    borderColor: "rgba(255, 255, 255, 0.24)",
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md
+    paddingVertical: spacing.md,
+    boxShadow: "0 14px 34px rgba(15, 63, 50, 0.22)"
   },
   eyebrow: {
-    color: colors.accent,
+    color: "#9be7c6",
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 0
   },
   title: {
-    color: colors.text,
+    color: "#ffffff",
     fontSize: 24,
     fontWeight: "900",
     marginTop: spacing.xs
   },
   subtitle: {
-    color: colors.muted,
+    color: "#d8efe7",
     marginTop: spacing.xs,
     lineHeight: 19
   },
