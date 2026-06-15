@@ -11,6 +11,7 @@ type RouteCardProps = {
   item: RankedRoute;
   state?: UserRouteState;
   runtimeDriving?: RuntimeDrivingLabel;
+  href?: React.ComponentProps<typeof Link>["href"];
 };
 
 const durationLabel = {
@@ -19,14 +20,14 @@ const durationLabel = {
   weekend: "周末两日"
 };
 
-export function RouteCard({ item, state, runtimeDriving }: RouteCardProps) {
+export function RouteCard({ item, state, runtimeDriving, href }: RouteCardProps) {
   const route = item.route;
   const drivingText = runtimeDriving
     ? `${runtimeDriving.duration} / ${runtimeDriving.distance}`
     : `${Math.round((route.estimatedDrivingMinutes ?? 0) / 60)}h 总驾驶`;
 
   return (
-    <Link href={`/route/${route.id}`} asChild>
+    <Link href={href ?? `/route/${route.id}`} asChild>
       <Pressable style={styles.card}>
         <View style={styles.header}>
           <View style={styles.titleWrap}>
