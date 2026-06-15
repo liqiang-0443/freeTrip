@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import type { FootprintMapModel } from "@/domain/footprintMap";
-import { getAmapWebKey, loadAmapWebSdk } from "@/services/amapWebLoader";
+import type { FootprintMapModel, FootprintMarker } from "@/domain/footprintMap";
+import { getAmapWebKey, loadAmapWebSdk, type AmapWebApi } from "@/services/amapWebLoader";
 import { colors, radius, spacing } from "@/styles/theme";
 
 type FootprintMapViewProps = {
@@ -10,10 +10,15 @@ type FootprintMapViewProps = {
 };
 
 export function FootprintMapView({ model }: FootprintMapViewProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [amap, setAmap] = useState<AmapWebApi | undefined>();
   const [status, setStatus] = useState<"missing-key" | "loading" | "loaded" | "failed">(
     getAmapWebKey() ? "loading" : "missing-key"
   );
   const [message, setMessage] = useState<string | undefined>();
+  const [selectedMarker, setSelectedMarker] = useState<FootprintMarker | undefined>(
+    model.markers[0]
+  );
 
   useEffect(() => {
     if (!getAmapWebKey()) {
@@ -27,10 +32,11 @@ export function FootprintMapView({ model }: FootprintMapViewProps) {
     setMessage("正在加载高德 Web 地图...");
 
     loadAmapWebSdk()
-      .then(() => {
+      .then((loadedAmap) => {
         if (mounted) {
+          setAmap(loadedAmap);
           setStatus("loaded");
-          setMessage("高德 Web 地图已加载，下一步会渲染真实点位。");
+          setMessage(undefined);
         }
       })
       .catch((error: unknown) => {
@@ -45,18 +51,104 @@ export function FootprintMapView({ model }: FootprintMapViewProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!amap || !containerRef.current) {
+      return;
+    }
+
+    const map = new amap.Map(containerRef.current, {
+      center: [model.center.longitude, model.center.latitude],
+      zoom: model.initialCamera.zoom,
+      resizeEnable: true,
+      viewMode: "2D"
+    });
+    const overlays = [
+      ...model.polylines.map((polyline) => {
+        const overlay = new amap.Polyline({
+          path: polyline.points.map((point) => [point.longitude, point.latitude]),
+          strokeColor: "#2f7d55",
+          strokeWeight: 7,
+          strokeOpacity: 0.85,
+          lineJoin: "round",
+          zIndex: 20
+        });
+        overlay.setMap(map);
+        return overlay;
+      }),
+      ...model.markers.map((marker) => {
+        const overlay = new amap.Marker({
+          position: [marker.coordinate.longitude, marker.coordinate.latitude],
+          title: marker.stopName,
+          anchor: "bottom-center",
+          offset: new amap.Pixel(0, 0)
+        });
+        overlay.on?.("click", () => setSelectedMarker(marker));
+        overlay.setMap(map);
+        return overlay;
+      })
+    ];
+
+    if (overlays.length > 0) {
+      map.setFitView(overlays);
+    }
+
+    return () => {
+      overlays.forEach((overlay) => overlay.setMap(null));
+      map.destroy();
+    };
+  }, [amap, model]);
+
   return (
     <View style={styles.wrap}>
-      <Ionicons
-        name={status === "failed" || status === "missing-key" ? "warning" : "map"}
-        size={28}
-        color={status === "failed" || status === "missing-key" ? colors.warning : colors.primaryDark}
-      />
-      <Text style={styles.title}>{statusLabels[status]}</Text>
-      <Text style={styles.body}>
-        已记录 {model.visitedRouteCount} 条路线、{model.markers.length} 个地点。
-      </Text>
-      {message ? <Text style={styles.hint}>{message}</Text> : null}
+      <div ref={containerRef} style={mapElementStyle} />
+
+      {status === "loaded" ? null : (
+        <View style={styles.statusPanel}>
+          <Ionicons
+            name={status === "failed" || status === "missing-key" ? "warning" : "map"}
+            size={28}
+            color={status === "failed" || status === "missing-key" ? colors.warning : colors.primaryDark}
+          />
+          <Text style={styles.title}>{statusLabels[status]}</Text>
+          <Text style={styles.body}>
+            已记录 {model.visitedRouteCount} 条路线、{model.markers.length} 个地点。
+          </Text>
+          {message ? <Text style={styles.hint}>{message}</Text> : null}
+        </View>
+      )}
+
+      <View style={styles.summary}>
+        <Metric value={model.visitedRouteCount} label="路线" />
+        <Metric value={model.markers.length} label="地点" />
+        <Metric value={model.photoCount} label="照片" />
+      </View>
+
+      {selectedMarker ? (
+        <View style={styles.callout}>
+          <View style={styles.calloutIcon}>
+            <Ionicons name="location" size={18} color="#ffffff" />
+          </View>
+          <View style={styles.calloutText}>
+            <Text style={styles.stopName}>{selectedMarker.stopName}</Text>
+            <Text style={styles.stopMeta} numberOfLines={2}>
+              {selectedMarker.routeTitle} · 去过 {selectedMarker.visitedAt} ·{" "}
+              {selectedMarker.photoCount} 张照片
+            </Text>
+          </View>
+        </View>
+      ) : model.markers.length === 0 ? (
+        <View style={styles.callout}>
+          <View style={styles.calloutIcon}>
+            <Ionicons name="map" size={18} color="#ffffff" />
+          </View>
+          <View style={styles.calloutText}>
+            <Text style={styles.stopName}>先点亮第一处足迹</Text>
+            <Text style={styles.stopMeta}>
+              在路线详情里标记“去过”，这里会显示真实地图点位。
+            </Text>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -68,12 +160,35 @@ const statusLabels = {
   failed: "高德地图加载失败"
 };
 
+function Metric({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={styles.metric}>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
+    </View>
+  );
+}
+
+const mapElementStyle = {
+  position: "absolute",
+  inset: 0,
+  width: "100%",
+  height: "100%"
+} satisfies React.CSSProperties;
+
 const styles = StyleSheet.create({
   wrap: {
     minHeight: 430,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+    overflow: "hidden",
+    position: "relative"
+  },
+  statusPanel: {
+    position: "absolute",
+    inset: 0,
     backgroundColor: colors.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
@@ -94,5 +209,63 @@ const styles = StyleSheet.create({
     color: colors.muted,
     lineHeight: 20,
     textAlign: "center"
+  },
+  summary: {
+    position: "absolute",
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  metric: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.92)",
+    borderRadius: radius.sm,
+    paddingVertical: spacing.sm,
+    alignItems: "center"
+  },
+  metricValue: {
+    color: colors.primaryDark,
+    fontSize: 20,
+    fontWeight: "900"
+  },
+  metricLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  callout: {
+    position: "absolute",
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: radius.md,
+    padding: spacing.md
+  },
+  calloutIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primary
+  },
+  calloutText: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  stopName: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  stopMeta: {
+    color: colors.muted,
+    lineHeight: 18
   }
 });
