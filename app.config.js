@@ -25,6 +25,10 @@ module.exports = {
       package: "com.liqiang.freetrip",
       permissions: ["READ_MEDIA_IMAGES", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
     },
+    web: {
+      bundler: "metro",
+      output: "static"
+    },
     plugins: [
       "expo-router",
       [
@@ -44,6 +48,7 @@ module.exports = {
       ]
     ],
     experiments: {
+      baseUrl: process.env.EXPO_PUBLIC_BASE_PATH || undefined,
       typedRoutes: true
     }
   }

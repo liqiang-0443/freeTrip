@@ -9,9 +9,34 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
+          position: "absolute",
+          left: 14,
+          right: 14,
+          bottom: 10,
+          height: 78,
           borderTopColor: colors.border,
-          backgroundColor: colors.surface
+          borderTopWidth: 1,
+          borderRadius: 22,
+          backgroundColor: "rgba(255, 255, 255, 0.96)",
+          boxShadow: "0 14px 34px rgba(15, 63, 50, 0.18)",
+          elevation: 12,
+          zIndex: 50,
+          paddingTop: 6,
+          paddingBottom: 10
+        },
+        tabBarItemStyle: {
+          paddingVertical: 4
+        },
+        tabBarIconStyle: {
+          marginTop: 2
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          lineHeight: 16,
+          fontWeight: "800",
+          paddingBottom: 2
         }
       }}
     >
@@ -42,6 +67,7 @@ export default function TabsLayout() {
           )
         }}
       />
+      <Tabs.Screen name="route/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

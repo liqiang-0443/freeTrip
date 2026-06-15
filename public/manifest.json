@@ -1,0 +1,25 @@
+{
+  "name": "FreeTrip 自驾足迹",
+  "short_name": "FreeTrip",
+  "description": "记录自驾去过的地方、路线和照片的本地 PWA。",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f4ee",
+  "theme_color": "#2f6f4e",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
