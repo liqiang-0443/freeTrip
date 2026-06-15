@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { NearbyDiscovery } from "@/components/NearbyDiscovery";
 import { RouteCard } from "@/components/RouteCard";
 import { RouteFilters } from "@/components/RouteFilters";
 import { routeSeed } from "@/data/routes.seed";
 import { rankRoutes } from "@/domain/recommendations";
 import type { DurationType } from "@/domain/routes";
+import { usePoiDiscovery } from "@/hooks/usePoiDiscovery";
+import { formatRuntimeDriving, useRouteRuntimeInfo } from "@/hooks/useRouteRuntimeInfo";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
 import { colors, spacing } from "@/styles/theme";
 
@@ -15,6 +18,7 @@ export default function RecommendationsScreen() {
   const [durationType, setDurationType] = useState<DurationType>("one_day");
   const [selectedTags, setSelectedTags] = useState<string[]>(["自然"]);
   const { states } = useUserRoutes();
+  const poiDiscovery = usePoiDiscovery();
 
   const rankedRoutes = useMemo(
     () =>
@@ -25,6 +29,11 @@ export default function RecommendationsScreen() {
       }),
     [durationType, selectedTags, states]
   );
+  const runtimeRoutes = useMemo(
+    () => rankedRoutes.slice(0, 3).map((item) => item.route),
+    [rankedRoutes]
+  );
+  const runtime = useRouteRuntimeInfo(runtimeRoutes);
 
   function toggleTag(tag: string) {
     setSelectedTags((current) =>
@@ -53,9 +62,24 @@ export default function RecommendationsScreen() {
           onToggleTag={toggleTag}
         />
 
+        <NearbyDiscovery
+          status={poiDiscovery.status}
+          keyword={poiDiscovery.keyword}
+          pois={poiDiscovery.pois}
+          error={poiDiscovery.error}
+          onSearch={(keyword) => {
+            void poiDiscovery.search(keyword);
+          }}
+        />
+
         <View style={styles.list}>
           {rankedRoutes.map((item) => (
-            <RouteCard key={item.route.id} item={item} state={states[item.route.id]} />
+            <RouteCard
+              key={item.route.id}
+              item={item}
+              state={states[item.route.id]}
+              runtimeDriving={formatRuntimeDriving(runtime.infoByRouteId[item.route.id])}
+            />
           ))}
         </View>
       </ScrollView>

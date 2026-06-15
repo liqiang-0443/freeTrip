@@ -19,10 +19,10 @@ export const routeSeed: RouteTemplate[] = [
     status: "active",
     updatedAt: "2026-06-10",
     stops: [
-      { id: "origin", routeId: "xian-lintong-history-half-day", order: 0, name: "西安城区", role: "origin" },
-      { id: "museum", routeId: "xian-lintong-history-half-day", order: 1, name: "秦始皇帝陵博物院周边", role: "destination", suggestedStayMinutes: 150 },
-      { id: "food", routeId: "xian-lintong-history-half-day", order: 2, name: "临潼城区午餐", role: "food", suggestedStayMinutes: 60 },
-      { id: "return", routeId: "xian-lintong-history-half-day", order: 3, name: "返回西安", role: "return" }
+      { id: "origin", routeId: "xian-lintong-history-half-day", order: 0, name: "西安城区", role: "origin", longitude: 108.940174, latitude: 34.341568 },
+      { id: "museum", routeId: "xian-lintong-history-half-day", order: 1, name: "秦始皇帝陵博物院周边", role: "destination", suggestedStayMinutes: 150, longitude: 109.278499, latitude: 34.385354 },
+      { id: "food", routeId: "xian-lintong-history-half-day", order: 2, name: "临潼城区午餐", role: "food", suggestedStayMinutes: 60, longitude: 109.214238, latitude: 34.366665 },
+      { id: "return", routeId: "xian-lintong-history-half-day", order: 3, name: "返回西安", role: "return", longitude: 108.940174, latitude: 34.341568 }
     ]
   },
   {
@@ -43,10 +43,10 @@ export const routeSeed: RouteTemplate[] = [
     status: "active",
     updatedAt: "2026-06-10",
     stops: [
-      { id: "origin", routeId: "xian-yuanjia-village-half-day", order: 0, name: "西安城区", role: "origin" },
-      { id: "main", routeId: "xian-yuanjia-village-half-day", order: 1, name: "袁家村", role: "destination", suggestedStayMinutes: 180 },
-      { id: "optional", routeId: "xian-yuanjia-village-half-day", order: 2, name: "礼泉县城备选补给", role: "optional" },
-      { id: "return", routeId: "xian-yuanjia-village-half-day", order: 3, name: "返回西安", role: "return" }
+      { id: "origin", routeId: "xian-yuanjia-village-half-day", order: 0, name: "西安城区", role: "origin", longitude: 108.940174, latitude: 34.341568 },
+      { id: "main", routeId: "xian-yuanjia-village-half-day", order: 1, name: "袁家村", role: "destination", suggestedStayMinutes: 180, longitude: 108.521209, latitude: 34.609676 },
+      { id: "optional", routeId: "xian-yuanjia-village-half-day", order: 2, name: "礼泉县城备选补给", role: "optional", longitude: 108.42502, latitude: 34.481764 },
+      { id: "return", routeId: "xian-yuanjia-village-half-day", order: 3, name: "返回西安", role: "return", longitude: 108.940174, latitude: 34.341568 }
     ]
   },
   {
@@ -67,10 +67,10 @@ export const routeSeed: RouteTemplate[] = [
     status: "active",
     updatedAt: "2026-06-10",
     stops: [
-      { id: "origin", routeId: "xian-bailuyuan-half-day", order: 0, name: "西安城区", role: "origin" },
-      { id: "main", routeId: "xian-bailuyuan-half-day", order: 1, name: "白鹿原影视城周边", role: "destination", suggestedStayMinutes: 150 },
-      { id: "view", routeId: "xian-bailuyuan-half-day", order: 2, name: "塬上观景点", role: "viewpoint", suggestedStayMinutes: 40 },
-      { id: "return", routeId: "xian-bailuyuan-half-day", order: 3, name: "返回西安", role: "return" }
+      { id: "origin", routeId: "xian-bailuyuan-half-day", order: 0, name: "西安城区", role: "origin", longitude: 108.940174, latitude: 34.341568 },
+      { id: "main", routeId: "xian-bailuyuan-half-day", order: 1, name: "白鹿原影视城周边", role: "destination", suggestedStayMinutes: 150, longitude: 109.147442, latitude: 34.172721 },
+      { id: "view", routeId: "xian-bailuyuan-half-day", order: 2, name: "塬上观景点", role: "viewpoint", suggestedStayMinutes: 40, longitude: 109.080429, latitude: 34.202641 },
+      { id: "return", routeId: "xian-bailuyuan-half-day", order: 3, name: "返回西安", role: "return", longitude: 108.940174, latitude: 34.341568 }
     ]
   },
   {
@@ -91,10 +91,10 @@ export const routeSeed: RouteTemplate[] = [
     status: "active",
     updatedAt: "2026-06-10",
     stops: [
-      { id: "origin", routeId: "xian-taiping-forest-one-day", order: 0, name: "西安城区", role: "origin" },
-      { id: "main", routeId: "xian-taiping-forest-one-day", order: 1, name: "太平国家森林公园", role: "destination", suggestedStayMinutes: 260 },
-      { id: "food", routeId: "xian-taiping-forest-one-day", order: 2, name: "环山路农家乐", role: "food", suggestedStayMinutes: 70 },
-      { id: "return", routeId: "xian-taiping-forest-one-day", order: 3, name: "返回西安", role: "return" }
+      { id: "origin", routeId: "xian-taiping-forest-one-day", order: 0, name: "西安城区", role: "origin", longitude: 108.940174, latitude: 34.341568 },
+      { id: "main", routeId: "xian-taiping-forest-one-day", order: 1, name: "太平国家森林公园", role: "destination", suggestedStayMinutes: 260, longitude: 108.552515, latitude: 34.003542 },
+      { id: "food", routeId: "xian-taiping-forest-one-day", order: 2, name: "环山路农家乐", role: "food", suggestedStayMinutes: 70, longitude: 108.629877, latitude: 34.049331 },
+      { id: "return", routeId: "xian-taiping-forest-one-day", order: 3, name: "返回西安", role: "return", longitude: 108.940174, latitude: 34.341568 }
     ]
   },
   {
@@ -115,10 +115,10 @@ export const routeSeed: RouteTemplate[] = [
     status: "active",
     updatedAt: "2026-06-10",
     stops: [
-      { id: "origin", routeId: "xian-huashan-one-day", order: 0, name: "西安城区", role: "origin" },
-      { id: "main", routeId: "xian-huashan-one-day", order: 1, name: "华山游客中心", role: "destination", suggestedStayMinutes: 420 },
-      { id: "food", routeId: "xian-huashan-one-day", order: 2, name: "华阴城区晚餐", role: "food", suggestedStayMinutes: 60 },
-      { id: "return", routeId: "xian-huashan-one-day", order: 3, name: "返回西安", role: "return" }
+      { id: "origin", routeId: "xian-huashan-one-day", order: 0, name: "西安城区", role: "origin", longitude: 108.940174, latitude: 34.341568 },
+      { id: "main", routeId: "xian-huashan-one-day", order: 1, name: "华山游客中心", role: "destination", suggestedStayMinutes: 420, longitude: 110.087481, latitude: 34.520841 },
+      { id: "food", routeId: "xian-huashan-one-day", order: 2, name: "华阴城区晚餐", role: "food", suggestedStayMinutes: 60, longitude: 110.092286, latitude: 34.566096 },
+      { id: "return", routeId: "xian-huashan-one-day", order: 3, name: "返回西安", role: "return", longitude: 108.940174, latitude: 34.341568 }
     ]
   },
   {
@@ -139,10 +139,10 @@ export const routeSeed: RouteTemplate[] = [
     status: "active",
     updatedAt: "2026-06-10",
     stops: [
-      { id: "origin", routeId: "xian-qianling-one-day", order: 0, name: "西安城区", role: "origin" },
-      { id: "main", routeId: "xian-qianling-one-day", order: 1, name: "乾陵", role: "destination", suggestedStayMinutes: 160 },
-      { id: "optional", routeId: "xian-qianling-one-day", order: 2, name: "法门寺文化景区", role: "optional", suggestedStayMinutes: 150 },
-      { id: "return", routeId: "xian-qianling-one-day", order: 3, name: "返回西安", role: "return" }
+      { id: "origin", routeId: "xian-qianling-one-day", order: 0, name: "西安城区", role: "origin", longitude: 108.940174, latitude: 34.341568 },
+      { id: "main", routeId: "xian-qianling-one-day", order: 1, name: "乾陵", role: "destination", suggestedStayMinutes: 160, longitude: 108.228129, latitude: 34.579496 },
+      { id: "optional", routeId: "xian-qianling-one-day", order: 2, name: "法门寺文化景区", role: "optional", suggestedStayMinutes: 150, longitude: 107.905034, latitude: 34.437114 },
+      { id: "return", routeId: "xian-qianling-one-day", order: 3, name: "返回西安", role: "return", longitude: 108.940174, latitude: 34.341568 }
     ]
   },
   {
@@ -163,11 +163,11 @@ export const routeSeed: RouteTemplate[] = [
     status: "active",
     updatedAt: "2026-06-10",
     stops: [
-      { id: "origin", routeId: "xian-hanzhong-weekend", order: 0, name: "西安城区", role: "origin" },
-      { id: "main", routeId: "xian-hanzhong-weekend", order: 1, name: "汉中城区", role: "destination" },
-      { id: "lodging", routeId: "xian-hanzhong-weekend", order: 2, name: "汉中住宿", role: "lodging" },
-      { id: "optional", routeId: "xian-hanzhong-weekend", order: 3, name: "留坝或勉县备选点", role: "optional" },
-      { id: "return", routeId: "xian-hanzhong-weekend", order: 4, name: "返回西安", role: "return" }
+      { id: "origin", routeId: "xian-hanzhong-weekend", order: 0, name: "西安城区", role: "origin", longitude: 108.940174, latitude: 34.341568 },
+      { id: "main", routeId: "xian-hanzhong-weekend", order: 1, name: "汉中城区", role: "destination", longitude: 107.023323, latitude: 33.06748 },
+      { id: "lodging", routeId: "xian-hanzhong-weekend", order: 2, name: "汉中住宿", role: "lodging", longitude: 107.023323, latitude: 33.06748 },
+      { id: "optional", routeId: "xian-hanzhong-weekend", order: 3, name: "留坝或勉县备选点", role: "optional", longitude: 106.922201, latitude: 33.617571 },
+      { id: "return", routeId: "xian-hanzhong-weekend", order: 4, name: "返回西安", role: "return", longitude: 108.940174, latitude: 34.341568 }
     ]
   },
   {
@@ -188,11 +188,11 @@ export const routeSeed: RouteTemplate[] = [
     status: "active",
     updatedAt: "2026-06-10",
     stops: [
-      { id: "origin", routeId: "xian-yanan-weekend", order: 0, name: "西安城区", role: "origin" },
-      { id: "main", routeId: "xian-yanan-weekend", order: 1, name: "延安城区", role: "destination" },
-      { id: "lodging", routeId: "xian-yanan-weekend", order: 2, name: "延安住宿", role: "lodging" },
-      { id: "optional", routeId: "xian-yanan-weekend", order: 3, name: "黄陵返程备选", role: "optional" },
-      { id: "return", routeId: "xian-yanan-weekend", order: 4, name: "返回西安", role: "return" }
+      { id: "origin", routeId: "xian-yanan-weekend", order: 0, name: "西安城区", role: "origin", longitude: 108.940174, latitude: 34.341568 },
+      { id: "main", routeId: "xian-yanan-weekend", order: 1, name: "延安城区", role: "destination", longitude: 109.489727, latitude: 36.585455 },
+      { id: "lodging", routeId: "xian-yanan-weekend", order: 2, name: "延安住宿", role: "lodging", longitude: 109.489727, latitude: 36.585455 },
+      { id: "optional", routeId: "xian-yanan-weekend", order: 3, name: "黄陵返程备选", role: "optional", longitude: 109.262961, latitude: 35.583276 },
+      { id: "return", routeId: "xian-yanan-weekend", order: 4, name: "返回西安", role: "return", longitude: 108.940174, latitude: 34.341568 }
     ]
   },
   {
@@ -213,11 +213,11 @@ export const routeSeed: RouteTemplate[] = [
     status: "active",
     updatedAt: "2026-06-10",
     stops: [
-      { id: "origin", routeId: "xian-luoyang-weekend", order: 0, name: "西安城区", role: "origin" },
-      { id: "main", routeId: "xian-luoyang-weekend", order: 1, name: "洛阳城区", role: "destination" },
-      { id: "lodging", routeId: "xian-luoyang-weekend", order: 2, name: "洛阳住宿", role: "lodging" },
-      { id: "optional", routeId: "xian-luoyang-weekend", order: 3, name: "龙门石窟或洛阳博物馆", role: "optional" },
-      { id: "return", routeId: "xian-luoyang-weekend", order: 4, name: "返回西安", role: "return" }
+      { id: "origin", routeId: "xian-luoyang-weekend", order: 0, name: "西安城区", role: "origin", longitude: 108.940174, latitude: 34.341568 },
+      { id: "main", routeId: "xian-luoyang-weekend", order: 1, name: "洛阳城区", role: "destination", longitude: 112.453895, latitude: 34.619702 },
+      { id: "lodging", routeId: "xian-luoyang-weekend", order: 2, name: "洛阳住宿", role: "lodging", longitude: 112.453895, latitude: 34.619702 },
+      { id: "optional", routeId: "xian-luoyang-weekend", order: 3, name: "龙门石窟或洛阳博物馆", role: "optional", longitude: 112.479892, latitude: 34.559598 },
+      { id: "return", routeId: "xian-luoyang-weekend", order: 4, name: "返回西安", role: "return", longitude: 108.940174, latitude: 34.341568 }
     ]
   }
 ];

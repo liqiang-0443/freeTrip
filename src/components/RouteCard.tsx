@@ -4,11 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import type { RankedRoute } from "@/domain/recommendations";
 import { summarizeRouteStops } from "@/domain/routes";
 import type { UserRouteState } from "@/domain/userRouteState";
+import type { RuntimeDrivingLabel } from "@/hooks/useRouteRuntimeInfo";
 import { colors, radius, spacing } from "@/styles/theme";
 
 type RouteCardProps = {
   item: RankedRoute;
   state?: UserRouteState;
+  runtimeDriving?: RuntimeDrivingLabel;
 };
 
 const durationLabel = {
@@ -17,8 +19,12 @@ const durationLabel = {
   weekend: "周末两日"
 };
 
-export function RouteCard({ item, state }: RouteCardProps) {
+export function RouteCard({ item, state, runtimeDriving }: RouteCardProps) {
   const route = item.route;
+  const drivingText = runtimeDriving
+    ? `${runtimeDriving.duration} / ${runtimeDriving.distance}`
+    : `${Math.round((route.estimatedDrivingMinutes ?? 0) / 60)}h 总驾驶`;
+
   return (
     <Link href={`/route/${route.id}`} asChild>
       <Pressable style={styles.card}>
@@ -38,7 +44,8 @@ export function RouteCard({ item, state }: RouteCardProps) {
         </Text>
 
         <View style={styles.metaRow}>
-          <Badge icon="time-outline" text={`${Math.round((route.estimatedDrivingMinutes ?? 0) / 60)}h 总驾驶`} />
+          <Badge icon="time-outline" text={drivingText} />
+          {runtimeDriving ? <Badge icon="flash-outline" text="高德实时" /> : null}
           {route.recommendedStartTime ? (
             <Badge icon="navigate-outline" text={`${route.recommendedStartTime} 出发`} />
           ) : null}

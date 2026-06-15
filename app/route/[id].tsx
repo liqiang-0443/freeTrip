@@ -1,8 +1,9 @@
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,18 +12,51 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { RouteDiagram } from "@/components/RouteDiagram";
 import { StopTimeline } from "@/components/StopTimeline";
 import { routeSeed } from "@/data/routes.seed";
 import { summarizeRouteStops } from "@/domain/routes";
+import { groupRoutePhotosByStop } from "@/domain/travelJournal";
+import { formatRuntimeDriving, useRouteRuntimeInfo } from "@/hooks/useRouteRuntimeInfo";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
+import { buildRouteFromDiscoveredPoi } from "@/services/amapPoiSearch";
+import { buildAmapNavigationUri } from "@/services/amapRoutes";
 import { colors, radius, spacing } from "@/styles/theme";
 
 export default function RouteDetailScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id: string }>();
-  const route = routeSeed.find((item) => item.id === params.id);
+  const params = useLocalSearchParams<{
+    id: string;
+    poiId?: string;
+    poiName?: string;
+    poiType?: string;
+    poiAddress?: string;
+    poiDistrict?: string;
+    poiLongitude?: string;
+    poiLatitude?: string;
+  }>();
+  const discoveredRoute = useMemo(
+    () => buildDiscoveredRouteFromParams(params),
+    [
+      params.id,
+      params.poiId,
+      params.poiName,
+      params.poiType,
+      params.poiAddress,
+      params.poiDistrict,
+      params.poiLongitude,
+      params.poiLatitude
+    ]
+  );
+  const route = routeSeed.find((item) => item.id === params.id) ?? discoveredRoute;
+  const isDiscoveredRoute = Boolean(discoveredRoute);
   const { states, actions } = useUserRoutes();
-  const state = route ? states[route.id] : undefined;
+  const state = route && !isDiscoveredRoute ? states[route.id] : undefined;
+  const runtimeRoutes = useMemo(() => (route ? [route] : []), [route]);
+  const runtime = useRouteRuntimeInfo(runtimeRoutes);
+  const runtimeDriving = route ? formatRuntimeDriving(runtime.infoByRouteId[route.id]) : undefined;
+  const runtimeError = route ? runtime.errorByRouteId[route.id] : undefined;
+  const [selectedPhotoStopId, setSelectedPhotoStopId] = useState<string | undefined>();
 
   const tomorrow = useMemo(() => {
     const date = new Date();
@@ -45,8 +79,20 @@ export default function RouteDetailScreen() {
   }
 
   const selectedRoute = route;
+  const navigationUri = buildAmapNavigationUri(selectedRoute);
+  const runtimeStatusText = getRuntimeStatusText(runtime.status, runtimeError, Boolean(runtimeDriving));
+  const sortedStops = [...selectedRoute.stops].sort((left, right) => left.order - right.order);
+  const defaultPhotoStopId =
+    selectedPhotoStopId ??
+    selectedRoute.stops.find((stop) => stop.role === "destination")?.id ??
+    sortedStops[0]?.id;
+  const photoGroups = groupRoutePhotosByStop(selectedRoute, state);
 
   async function addPhoto() {
+    if (isDiscoveredRoute) {
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8
@@ -57,9 +103,17 @@ export default function RouteDetailScreen() {
         id: `${Date.now()}`,
         uri: result.assets[0].uri,
         addedAt: new Date().toISOString(),
-        stopId: selectedRoute.stops.find((stop) => stop.role === "destination")?.id
+        stopId: defaultPhotoStopId
       });
     }
+  }
+
+  async function openAmapNavigation() {
+    if (!navigationUri) {
+      return;
+    }
+
+    await Linking.openURL(navigationUri);
   }
 
   return (
@@ -81,36 +135,60 @@ export default function RouteDetailScreen() {
           <Text style={styles.sectionTitle}>路线</Text>
           <Text style={styles.path}>{summarizeRouteStops(route)}</Text>
           <View style={styles.metricRow}>
-            <Metric label="总驾驶" value={`${Math.round((route.estimatedDrivingMinutes ?? 0) / 60)}h`} />
+            <Metric
+              label={runtimeDriving ? "高德车程" : "总驾驶"}
+              value={runtimeDriving ? runtimeDriving.duration : `${Math.round((route.estimatedDrivingMinutes ?? 0) / 60)}h`}
+            />
+            <Metric
+              label={runtimeDriving ? "高德里程" : "数据来源"}
+              value={runtimeDriving ? runtimeDriving.distance : "内置估算"}
+            />
             <Metric label="建议出发" value={route.recommendedStartTime ?? "灵活"} />
-            <Metric label="路线类型" value={durationLabels[route.durationType]} />
           </View>
         </View>
 
         <View style={styles.actions}>
           <ActionButton
-            label={state?.collected ? "已收藏" : "收藏"}
+            label={isDiscoveredRoute ? "临时路线" : state?.collected ? "已收藏" : "收藏"}
             icon={state?.collected ? "bookmark" : "bookmark-outline"}
-            onPress={() => actions.toggleCollected(route.id)}
+            onPress={() => {
+              if (!isDiscoveredRoute) {
+                actions.toggleCollected(route.id);
+              }
+            }}
           />
           <ActionButton
-            label={state?.plannedDate ? `计划 ${state.plannedDate}` : "计划明天"}
+            label={isDiscoveredRoute ? "先看车程" : state?.plannedDate ? `计划 ${state.plannedDate}` : "计划明天"}
             icon="calendar-outline"
-            onPress={() => actions.planRoute(route.id, tomorrow)}
+            onPress={() => {
+              if (!isDiscoveredRoute) {
+                actions.planRoute(route.id, tomorrow);
+              }
+            }}
           />
           <ActionButton
-            label={state?.visitedAt ? "已去过" : "标记去过"}
+            label={isDiscoveredRoute ? "未入库" : state?.visitedAt ? "已去过" : "标记去过"}
             icon={state?.visitedAt ? "checkmark-circle" : "checkmark-circle-outline"}
-            onPress={() => actions.markVisited(route.id, new Date().toISOString().slice(0, 10))}
+            onPress={() => {
+              if (!isDiscoveredRoute) {
+                actions.markVisited(route.id, new Date().toISOString().slice(0, 10));
+              }
+            }}
           />
         </View>
 
         <View style={styles.mapPlaceholder}>
-          <Text style={styles.mapTitle}>地图和实时路线增强</Text>
-          <Text style={styles.mapText}>
-            第一版先展示路线骨架。下一步接高德后，这里会显示实时车程、停车、餐饮和外部导航入口。
-          </Text>
+          <Text style={styles.mapTitle}>高德路线增强</Text>
+          <Text style={styles.mapText}>{runtimeStatusText}</Text>
+          {navigationUri ? (
+            <Pressable style={styles.navigationButton} onPress={openAmapNavigation}>
+              <Ionicons name="navigate" size={18} color="#ffffff" />
+              <Text style={styles.navigationButtonText}>打开高德导航</Text>
+            </Pressable>
+          ) : null}
         </View>
+
+        <RouteDiagram route={route} />
 
         <View style={styles.panel}>
           <Text style={styles.sectionTitle}>行程时间线</Text>
@@ -139,17 +217,48 @@ export default function RouteDetailScreen() {
           <View style={styles.photoHeader}>
             <Text style={styles.sectionTitle}>照片</Text>
             <Pressable style={styles.smallButton} onPress={addPhoto}>
-              <Text style={styles.smallButtonText}>添加照片</Text>
+              <Text style={styles.smallButtonText}>{isDiscoveredRoute ? "入库后添加" : "添加照片"}</Text>
             </Pressable>
           </View>
+          <Text style={styles.emptyText}>先选停靠点，再添加照片。</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stopPicker}>
+            {sortedStops.map((stop) => {
+              const selected = defaultPhotoStopId === stop.id;
+              return (
+                <Pressable
+                  key={stop.id}
+                  style={[styles.stopChip, selected ? styles.stopChipSelected : null]}
+                  onPress={() => setSelectedPhotoStopId(stop.id)}
+                >
+                  <Text style={[styles.stopChipText, selected ? styles.stopChipTextSelected : null]}>
+                    {stop.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
           {state?.photos?.length ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photos}>
-              {state.photos.map((photo) => (
-                <Image key={photo.id} source={{ uri: photo.uri }} style={styles.photo} />
+            <View style={styles.photoGroups}>
+              {photoGroups.map((group) => (
+                <View key={group.stop?.id ?? "unassigned"} style={styles.photoGroup}>
+                  <View style={styles.photoGroupHeader}>
+                    <Text style={styles.photoGroupTitle}>{group.stop?.name ?? "未归类照片"}</Text>
+                    <Text style={styles.photoGroupCount}>{group.photos.length} 张</Text>
+                  </View>
+                  {group.photos.length ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photos}>
+                      {group.photos.map((photo) => (
+                        <Image key={photo.id} source={{ uri: photo.uri }} style={styles.photo} />
+                      ))}
+                    </ScrollView>
+                  ) : (
+                    <Text style={styles.emptyText}>这个停靠点还没有照片。</Text>
+                  )}
+                </View>
               ))}
-            </ScrollView>
+            </View>
           ) : (
-            <Text style={styles.emptyText}>去过之后可以把照片挂到这条路线下面。</Text>
+            <Text style={styles.emptyText}>去过之后可以把照片挂到具体停靠点下面。</Text>
           )}
         </View>
       </ScrollView>
@@ -181,6 +290,60 @@ function ActionButton({
       <Text style={styles.actionText}>{label}</Text>
     </Pressable>
   );
+}
+
+function getRuntimeStatusText(
+  status: "disabled" | "loading" | "ready" | "error",
+  error: string | undefined,
+  hasRuntimeDriving: boolean
+) {
+  if (hasRuntimeDriving) {
+    return "已接入高德 Web 服务，当前显示按路线停靠点计算的实时驾驶里程和车程。";
+  }
+
+  if (status === "loading") {
+    return "正在向高德 Web 服务获取这条路线的驾驶里程和车程。";
+  }
+
+  if (status === "error") {
+    return `高德路线暂时不可用，页面继续使用内置估算。${error ? `原因：${error}` : ""}`;
+  }
+
+  return "未配置高德 Web 服务 Key，当前使用内置路线估算；配置 EXPO_PUBLIC_AMAP_WEB_KEY 后会自动拉取实时驾驶数据。";
+}
+
+function buildDiscoveredRouteFromParams(params: {
+  id?: string;
+  poiId?: string;
+  poiName?: string;
+  poiType?: string;
+  poiAddress?: string;
+  poiDistrict?: string;
+  poiLongitude?: string;
+  poiLatitude?: string;
+}) {
+  const longitude = Number(params.poiLongitude);
+  const latitude = Number(params.poiLatitude);
+
+  if (
+    !params.id?.startsWith("discovered-") ||
+    !params.poiId ||
+    !params.poiName ||
+    !Number.isFinite(longitude) ||
+    !Number.isFinite(latitude)
+  ) {
+    return undefined;
+  }
+
+  return buildRouteFromDiscoveredPoi({
+    id: params.poiId,
+    name: params.poiName,
+    type: params.poiType || undefined,
+    address: params.poiAddress || undefined,
+    district: params.poiDistrict || undefined,
+    longitude,
+    latitude
+  });
 }
 
 const durationLabels = {
@@ -315,6 +478,21 @@ const styles = StyleSheet.create({
     color: "#e8f0ea",
     lineHeight: 21
   },
+  navigationButton: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm
+  },
+  navigationButtonText: {
+    color: "#ffffff",
+    fontWeight: "900"
+  },
   listItem: {
     color: colors.text,
     lineHeight: 22
@@ -338,6 +516,51 @@ const styles = StyleSheet.create({
   },
   smallButtonText: {
     color: "#ffffff",
+    fontWeight: "800"
+  },
+  stopPicker: {
+    gap: spacing.sm
+  },
+  stopChip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface
+  },
+  stopChipSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
+  },
+  stopChipText: {
+    color: colors.primaryDark,
+    fontWeight: "800"
+  },
+  stopChipTextSelected: {
+    color: "#ffffff"
+  },
+  photoGroups: {
+    gap: spacing.md
+  },
+  photoGroup: {
+    gap: spacing.sm
+  },
+  photoGroupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md
+  },
+  photoGroupTitle: {
+    flex: 1,
+    color: colors.text,
+    fontWeight: "900",
+    fontSize: 15
+  },
+  photoGroupCount: {
+    color: colors.muted,
+    fontSize: 12,
     fontWeight: "800"
   },
   photos: {
