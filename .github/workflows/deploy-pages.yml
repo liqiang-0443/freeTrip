@@ -3,7 +3,7 @@ name: Deploy FreeTrip PWA
 on:
   push:
     branches:
-      - codex/web-first-pwa
+      - main
   workflow_dispatch:
 
 permissions:
