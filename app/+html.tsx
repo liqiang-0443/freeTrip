@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { ScrollViewStyleReset } from "expo-router/html";
 
+const basePath = process.env.EXPO_PUBLIC_BASE_PATH || "";
+const assetPath = (path: string) => `${basePath}${path}`;
+
 export default function Root({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN">
@@ -15,8 +18,8 @@ export default function Root({ children }: { children: ReactNode }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="FreeTrip" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icons/icon.svg" />
+        <link rel="manifest" href={assetPath("/manifest.json")} />
+        <link rel="apple-touch-icon" href={assetPath("/icons/icon.svg")} />
         <ScrollViewStyleReset />
       </head>
       <body>
@@ -24,9 +27,10 @@ export default function Root({ children }: { children: ReactNode }) {
         <script
           dangerouslySetInnerHTML={{
             __html: `
+var basePath = ${JSON.stringify(basePath)};
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   window.addEventListener("load", function () {
-    navigator.serviceWorker.register("/sw.js").catch(function () {});
+    navigator.serviceWorker.register(basePath + "/sw.js", { scope: basePath + "/" }).catch(function () {});
   });
 } else if ("serviceWorker" in navigator) {
   navigator.serviceWorker.getRegistrations().then(function (registrations) {

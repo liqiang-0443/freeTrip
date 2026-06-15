@@ -1,5 +1,6 @@
-const CACHE_NAME = "freetrip-pwa-v3";
-const APP_SHELL = ["/", "/manifest.json", "/icons/icon.svg", "/icons/maskable-icon.svg"];
+const CACHE_NAME = "freetrip-pwa-v4";
+const APP_ROOT = new URL("./", self.registration.scope).toString();
+const APP_SHELL = ["./", "manifest.json", "icons/icon.svg", "icons/maskable-icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -23,7 +24,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (event.request.mode === "navigate") {
-    event.respondWith(fetch(event.request).catch(() => caches.match("/")));
+    event.respondWith(fetch(event.request).catch(() => caches.match(APP_ROOT)));
     return;
   }
 
@@ -43,7 +44,7 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
           return response;
         })
-        .catch(() => caches.match("/"));
+        .catch(() => caches.match(APP_ROOT));
     })
   );
 });
