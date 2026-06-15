@@ -117,7 +117,7 @@ export function FootprintMapView({ model, fullScreen = false }: FootprintMapView
       </View>
 
       {selectedMarker ? (
-        <View style={styles.callout}>
+        <View style={[styles.callout, fullScreen ? styles.calloutFullScreen : null]}>
           <View style={styles.calloutIcon}>
             <Ionicons name="location" size={18} color="#ffffff" />
           </View>
@@ -146,7 +146,7 @@ export function FootprintMapView({ model, fullScreen = false }: FootprintMapView
           </View>
         </View>
       ) : model.markers.length === 0 ? (
-        <View style={styles.callout}>
+        <View style={[styles.callout, fullScreen ? styles.calloutFullScreen : null]}>
           <View style={styles.calloutIcon}>
             <Ionicons name="map" size={18} color="#ffffff" />
           </View>
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   summaryFullScreen: {
-    top: 126
+    top: spacing.md
   },
   metric: {
     flex: 1,
@@ -292,6 +292,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: radius.md,
     padding: spacing.md
+  },
+  calloutFullScreen: {
+    bottom: 112
   },
   calloutIcon: {
     width: 34,
