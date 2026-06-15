@@ -121,6 +121,33 @@ export function buildAmapNavigationUri(route: RouteTemplate): string | null {
   return `androidamap://route/plan/?${params.toString()}`;
 }
 
+export function buildAmapNavigationUrl(route: RouteTemplate): URL | null {
+  const stops = selectRoutableStops(route);
+
+  if (stops.length < 2) {
+    return null;
+  }
+
+  const origin = stops[0];
+  const destination = stops[stops.length - 1];
+  const waypoints = stops.slice(1, -1);
+  const url = new URL("https://uri.amap.com/navigation");
+
+  url.searchParams.set("from", formatNavigationStop(origin));
+  url.searchParams.set("to", formatNavigationStop(destination));
+  url.searchParams.set("mode", "car");
+  url.searchParams.set("policy", "1");
+  url.searchParams.set("src", "FreeTrip");
+  url.searchParams.set("coordinate", "gaode");
+  url.searchParams.set("callnative", "1");
+
+  if (waypoints.length > 0) {
+    url.searchParams.set("via", waypoints.map(formatNavigationStop).join(";"));
+  }
+
+  return url;
+}
+
 export function formatDistance(meters: number): string {
   if (meters >= 1000) {
     return `${Math.round(meters / 1000)}km`;
@@ -140,6 +167,10 @@ export function formatDuration(seconds: number): string {
 
 function formatCoordinate(stop: CoordinateStop): string {
   return `${stop.longitude.toFixed(6)},${stop.latitude.toFixed(6)}`;
+}
+
+function formatNavigationStop(stop: CoordinateStop): string {
+  return `${formatCoordinate(stop)},${stop.name}`;
 }
 
 function hasCoordinate(stop: RouteStop): stop is CoordinateStop {

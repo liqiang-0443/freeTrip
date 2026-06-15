@@ -71,8 +71,11 @@ export function FootprintMapView({ model, fullScreen = false }: FootprintMapView
       center: [model.center.longitude, model.center.latitude],
       zoom: model.initialCamera.zoom,
       resizeEnable: true,
-      viewMode: "2D"
+      viewMode: "2D",
+      features: ["bg", "road"],
+      mapStyle: "amap://styles/whitesmoke"
     });
+    map.setMapStyle?.("amap://styles/whitesmoke");
     const overlays = model.markers.map((marker) => {
       const overlay = new amap.Marker({
         position: [marker.coordinate.longitude, marker.coordinate.latitude],

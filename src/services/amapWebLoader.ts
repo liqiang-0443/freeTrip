@@ -4,16 +4,29 @@ export type AmapWebApi = {
   Polyline: new (options?: Record<string, unknown>) => AmapWebOverlay;
   LngLat: new (longitude: number, latitude: number) => unknown;
   Pixel: new (x: number, y: number) => unknown;
+  Driving?: new (options?: Record<string, unknown>) => AmapWebDriving;
+  plugin?: (plugins: string | string[], callback: () => void) => void;
 };
 
 export type AmapWebMap = {
   destroy: () => void;
   setFitView: (overlays?: AmapWebOverlay[]) => void;
+  setMapStyle?: (style: string) => void;
 };
 
 export type AmapWebOverlay = {
   setMap: (map: AmapWebMap | null) => void;
   on?: (eventName: string, handler: () => void) => void;
+};
+
+export type AmapWebDriving = {
+  search: (
+    origin: unknown,
+    destination: unknown,
+    options: Record<string, unknown>,
+    callback?: (status: string, result: unknown) => void
+  ) => void;
+  clear?: () => void;
 };
 
 declare global {

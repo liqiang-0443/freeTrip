@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAmapDrivingUrl,
+  buildAmapNavigationUrl,
   buildAmapNavigationUri,
   parseAmapDrivingResponse,
   selectRoutableStops
@@ -137,5 +138,21 @@ describe("buildAmapNavigationUri", () => {
     expect(uri).toContain("dlat=34.003542");
     expect(uri).toContain("dlon=108.552515");
     expect(uri).toContain("dname=%E5%A4%AA%E5%B9%B3%E5%9B%BD%E5%AE%B6%E6%A3%AE%E6%9E%97%E5%85%AC%E5%9B%AD");
+  });
+});
+
+describe("buildAmapNavigationUrl", () => {
+  it("builds a web URI that works from PWA browsers", () => {
+    const url = buildAmapNavigationUrl(route);
+
+    expect(url?.origin).toBe("https://uri.amap.com");
+    expect(url?.pathname).toBe("/navigation");
+    expect(url?.searchParams.get("from")).toBe("108.940174,34.341568,西安城区");
+    expect(url?.searchParams.get("to")).toBe("108.940174,34.341568,返回西安");
+    expect(url?.searchParams.get("via")).toBe(
+      "108.552515,34.003542,太平国家森林公园;108.629877,34.049331,环山路农家乐"
+    );
+    expect(url?.searchParams.get("mode")).toBe("car");
+    expect(url?.searchParams.get("callnative")).toBe("1");
   });
 });

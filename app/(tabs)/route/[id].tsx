@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Image,
   Linking,
@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { RouteDiagram } from "@/components/RouteDiagram";
+import { RoutePreviewMapView } from "@/components/RoutePreviewMapView";
 import { StopTimeline } from "@/components/StopTimeline";
 import { routeSeed } from "@/data/routes.seed";
 import { summarizeRouteStops } from "@/domain/routes";
@@ -22,7 +23,7 @@ import { formatRuntimeDriving, useRouteRuntimeInfo } from "@/hooks/useRouteRunti
 import { useRoutePhotos } from "@/hooks/useRoutePhotos";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
 import { buildRouteFromDiscoveredPoi } from "@/services/amapPoiSearch";
-import { buildAmapNavigationUri } from "@/services/amapRoutes";
+import { buildAmapNavigationUrl } from "@/services/amapRoutes";
 import { colors, radius, spacing } from "@/styles/theme";
 
 export default function RouteDetailScreen() {
@@ -59,6 +60,7 @@ export default function RouteDetailScreen() {
   const runtimeDriving = route ? formatRuntimeDriving(runtime.infoByRouteId[route.id]) : undefined;
   const runtimeError = route ? runtime.errorByRouteId[route.id] : undefined;
   const [selectedPhotoStopId, setSelectedPhotoStopId] = useState<string | undefined>();
+  const webPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const routePhotos = useRoutePhotos(route && !isDiscoveredRoute ? route.id : undefined);
 
   const tomorrow = useMemo(() => {
@@ -82,7 +84,7 @@ export default function RouteDetailScreen() {
   }
 
   const selectedRoute = route;
-  const navigationUri = buildAmapNavigationUri(selectedRoute);
+  const navigationUrl = buildAmapNavigationUrl(selectedRoute);
   const runtimeStatusText = getRuntimeStatusText(runtime.status, runtimeError, Boolean(runtimeDriving));
   const sortedStops = [...selectedRoute.stops].sort((left, right) => left.order - right.order);
   const defaultPhotoStopId =
@@ -135,11 +137,20 @@ export default function RouteDetailScreen() {
   }
 
   async function openAmapNavigation() {
-    if (!navigationUri) {
+    if (!navigationUrl) {
       return;
     }
 
-    await Linking.openURL(navigationUri);
+    await Linking.openURL(navigationUrl.toString());
+  }
+
+  function openPhotoPicker() {
+    if (Platform.OS === "web") {
+      webPhotoInputRef.current?.click();
+      return;
+    }
+
+    void addPhoto();
   }
 
   return (
@@ -203,10 +214,12 @@ export default function RouteDetailScreen() {
           />
         </View>
 
-        <View style={styles.mapPlaceholder}>
+        <View style={styles.panel}>
           <Text style={styles.mapTitle}>高德路线增强</Text>
           <Text style={styles.mapText}>{runtimeStatusText}</Text>
-          {navigationUri ? (
+          <Text style={styles.sectionTitle}>高德路线预览</Text>
+          <RoutePreviewMapView route={selectedRoute} />
+          {navigationUrl ? (
             <Pressable style={styles.navigationButton} onPress={openAmapNavigation}>
               <Ionicons name="navigate" size={18} color="#ffffff" />
               <Text style={styles.navigationButtonText}>打开高德导航</Text>
@@ -242,10 +255,11 @@ export default function RouteDetailScreen() {
         <View style={styles.panel}>
           {Platform.OS === "web" ? (
             <input
+              ref={webPhotoInputRef}
               type="file"
               accept="image/*"
               multiple
-              style={webInlineFileInputStyle}
+              style={webHiddenFileInputStyle}
               onChange={(event) => {
                 void addWebPhotos(event.currentTarget.files);
                 event.currentTarget.value = "";
@@ -254,7 +268,7 @@ export default function RouteDetailScreen() {
           ) : null}
           <View style={styles.photoHeader}>
             <Text style={styles.sectionTitle}>照片</Text>
-            <Pressable style={styles.smallButton} onPress={addPhoto}>
+            <Pressable style={styles.smallButton} onPress={openPhotoPicker}>
               <Text style={styles.smallButtonText}>{isDiscoveredRoute ? "入库后添加" : "添加照片"}</Text>
             </Pressable>
           </View>
@@ -399,14 +413,8 @@ const durationLabels = {
   weekend: "周末两日"
 };
 
-const webInlineFileInputStyle = {
-  width: "100%",
-  boxSizing: "border-box",
-  border: "1px solid #d9dfd8",
-  borderRadius: 8,
-  padding: 10,
-  background: "#eef5ef",
-  color: "#204d38"
+const webHiddenFileInputStyle = {
+  display: "none"
 } satisfies React.CSSProperties;
 
 const webPhotoImageStyle = {
@@ -537,12 +545,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   mapTitle: {
-    color: "#ffffff",
+    display: "none",
+    color: colors.text,
     fontSize: 18,
     fontWeight: "900"
   },
   mapText: {
-    color: "#e8f0ea",
+    color: colors.muted,
     lineHeight: 21
   },
   navigationButton: {
