@@ -36,9 +36,9 @@ export type FootprintMapModel = {
   photoCount: number;
 };
 
-const XIAN_CENTER: FootprintCoordinate = {
-  latitude: 34.341575,
-  longitude: 108.93977
+const SHAANXI_CENTER: FootprintCoordinate = {
+  latitude: 35.191653,
+  longitude: 108.870143
 };
 
 export function buildFootprintMapModel(
@@ -77,35 +77,8 @@ export function buildFootprintMapModel(
     });
   });
 
-  const polylines = visitedRoutes.flatMap((route) => {
-    const points = [...route.stops]
-      .sort((left, right) => left.order - right.order)
-      .flatMap((stop) =>
-        isFiniteCoordinate(stop)
-          ? [
-              {
-                latitude: stop.latitude,
-                longitude: stop.longitude
-              }
-            ]
-          : []
-      );
-
-    if (points.length < 2) {
-      return [];
-    }
-
-    return [
-      {
-        id: route.id,
-        routeId: route.id,
-        routeTitle: route.title,
-        points
-      }
-    ];
-  });
-
-  const center = markers.length ? averageCoordinate(markers.map((marker) => marker.coordinate)) : XIAN_CENTER;
+  const polylines: FootprintPolyline[] = [];
+  const center = markers.length ? averageCoordinate(markers.map((marker) => marker.coordinate)) : SHAANXI_CENTER;
 
   return {
     markers,
@@ -113,7 +86,7 @@ export function buildFootprintMapModel(
     center,
     initialCamera: {
       target: center,
-      zoom: markers.length ? 8 : 9
+      zoom: 7
     },
     visitedRouteCount: visitedRoutes.length,
     photoCount: visitedRoutes.reduce(

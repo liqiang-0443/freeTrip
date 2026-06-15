@@ -3,7 +3,7 @@ import { buildFootprintMapModel } from "./footprintMap";
 import type { UserRouteStateMap } from "./userRouteState";
 
 describe("buildFootprintMapModel", () => {
-  it("builds markers and route lines for visited routes with coordinates", () => {
+  it("builds markers without route lines for visited routes with coordinates", () => {
     const route = routeSeed.find((item) => item.id === "xian-taiping-forest-one-day");
     expect(route).toBeDefined();
 
@@ -37,17 +37,17 @@ describe("buildFootprintMapModel", () => {
         latitude: expect.any(Number)
       }
     });
-    expect(model.polylines[0].points.length).toBeGreaterThanOrEqual(2);
+    expect(model.polylines).toEqual([]);
     expect(model.initialCamera.target).toEqual(model.center);
   });
 
-  it("falls back to Xi'an when no visited coordinate exists", () => {
+  it("falls back to a Shaanxi province view when no visited coordinate exists", () => {
     const model = buildFootprintMapModel(routeSeed, {});
 
     expect(model.markers).toEqual([]);
     expect(model.polylines).toEqual([]);
-    expect(model.center).toEqual({ latitude: 34.341575, longitude: 108.93977 });
-    expect(model.initialCamera.zoom).toBe(9);
+    expect(model.center).toEqual({ latitude: 35.191653, longitude: 108.870143 });
+    expect(model.initialCamera.zoom).toBe(7);
   });
 
   it("includes browser-local photo counts in the footprint total", () => {

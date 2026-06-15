@@ -27,9 +27,20 @@ const DB_NAME = "freetrip-photo-library";
 const DB_VERSION = 1;
 const STORE_NAME = "photos";
 
-export const routePhotoLibrary: PhotoLibrary = canUseIndexedDb()
-  ? createIndexedDbPhotoLibrary()
-  : createUnsupportedPhotoLibrary();
+let routePhotoLibrary: PhotoLibrary | undefined;
+
+export function getRoutePhotoLibrary(): PhotoLibrary {
+  routePhotoLibrary ??= canStoreRoutePhotos()
+    ? createIndexedDbPhotoLibrary()
+    : canUseLocalStorage()
+      ? createLocalStoragePhotoLibrary()
+    : createUnsupportedPhotoLibrary();
+  return routePhotoLibrary;
+}
+
+export function resetRoutePhotoLibraryForTests() {
+  routePhotoLibrary = undefined;
+}
 
 export function createIndexedDbPhotoLibrary(): PhotoLibrary {
   const listeners = new Set<() => void>();
@@ -131,6 +142,57 @@ export function createMemoryPhotoLibrary(): PhotoLibrary {
   };
 }
 
+export function createLocalStoragePhotoLibrary(): PhotoLibrary {
+  const listeners = new Set<() => void>();
+  const key = "freetrip:route-photos:v1";
+
+  return {
+    async addRoutePhotos(routeId, stopId, files) {
+      const existing = readLocalStoragePhotos(key);
+      const added = await Promise.all(
+        Array.from(files).map(async (file) => ({
+          id: createPhotoId(routeId),
+          routeId,
+          stopId,
+          name: file.name || "photo",
+          type: file.type || "image/jpeg",
+          size: file.size,
+          addedAt: new Date().toISOString(),
+          dataUrl: await readFileAsDataUrlWithFallback(file, routeId)
+        }))
+      );
+
+      writeLocalStoragePhotos(key, [...existing, ...added]);
+      notify(listeners);
+      return added;
+    },
+
+    async listRoutePhotos(routeId) {
+      return readLocalStoragePhotos(key).filter((photo) => photo.routeId === routeId);
+    },
+
+    async countPhotosByRoute() {
+      return readLocalStoragePhotos(key).reduce<PhotoCountByRoute>((counts, photo) => {
+        counts[photo.routeId] = (counts[photo.routeId] ?? 0) + 1;
+        return counts;
+      }, {});
+    },
+
+    async deleteRoutePhoto(photoId) {
+      writeLocalStoragePhotos(
+        key,
+        readLocalStoragePhotos(key).filter((photo) => photo.id !== photoId)
+      );
+      notify(listeners);
+    },
+
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    }
+  };
+}
+
 function createUnsupportedPhotoLibrary(): PhotoLibrary {
   const subscribe = () => () => undefined;
 
@@ -151,8 +213,12 @@ function createUnsupportedPhotoLibrary(): PhotoLibrary {
   };
 }
 
-function canUseIndexedDb() {
+export function canStoreRoutePhotos() {
   return typeof indexedDB !== "undefined";
+}
+
+function canUseLocalStorage() {
+  return typeof localStorage !== "undefined";
 }
 
 function createPhotoId(routeId: string) {
@@ -214,6 +280,32 @@ function readFileAsDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error ?? new Error("图片读取失败。"));
     reader.readAsDataURL(file);
   });
+}
+
+async function readFileAsDataUrlWithFallback(file: File, routeId: string): Promise<string> {
+  if (typeof FileReader === "undefined") {
+    return `memory://${routeId}/${file.name || "photo"}`;
+  }
+
+  return readFileAsDataUrl(file);
+}
+
+function readLocalStoragePhotos(key: string): LocalRoutePhoto[] {
+  const raw = localStorage.getItem(key);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as LocalRoutePhoto[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalStoragePhotos(key: string, photos: LocalRoutePhoto[]) {
+  localStorage.setItem(key, JSON.stringify(photos));
 }
 
 function notify(listeners: Set<() => void>) {

@@ -62,20 +62,7 @@ export function FootprintMapView({ model }: FootprintMapViewProps) {
       resizeEnable: true,
       viewMode: "2D"
     });
-    const overlays = [
-      ...model.polylines.map((polyline) => {
-        const overlay = new amap.Polyline({
-          path: polyline.points.map((point) => [point.longitude, point.latitude]),
-          strokeColor: "#2f7d55",
-          strokeWeight: 7,
-          strokeOpacity: 0.85,
-          lineJoin: "round",
-          zIndex: 20
-        });
-        overlay.setMap(map);
-        return overlay;
-      }),
-      ...model.markers.map((marker) => {
+    const overlays = model.markers.map((marker) => {
         const overlay = new amap.Marker({
           position: [marker.coordinate.longitude, marker.coordinate.latitude],
           title: marker.stopName,
@@ -85,12 +72,7 @@ export function FootprintMapView({ model }: FootprintMapViewProps) {
         overlay.on?.("click", () => setSelectedMarker(marker));
         overlay.setMap(map);
         return overlay;
-      })
-    ];
-
-    if (overlays.length > 0) {
-      map.setFitView(overlays);
-    }
+      });
 
     return () => {
       overlays.forEach((overlay) => overlay.setMap(null));
@@ -118,7 +100,6 @@ export function FootprintMapView({ model }: FootprintMapViewProps) {
       )}
 
       <View style={styles.summary}>
-        <Metric value={model.visitedRouteCount} label="路线" />
         <Metric value={model.markers.length} label="地点" />
         <Metric value={model.photoCount} label="照片" />
       </View>

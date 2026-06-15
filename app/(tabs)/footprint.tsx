@@ -1,18 +1,16 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
 import { FootprintMapView } from "@/components/FootprintMapView";
 import { routeSeed } from "@/data/routes.seed";
 import { buildFootprintMapModel } from "@/domain/footprintMap";
-import { groupRoutePhotosByStop } from "@/domain/travelJournal";
 import { useRoutePhotoCounts } from "@/hooks/useRoutePhotos";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
-import { colors, radius, spacing } from "@/styles/theme";
+import { colors, spacing } from "@/styles/theme";
 
 export default function FootprintScreen() {
   const { states } = useUserRoutes();
   const routePhotoCounts = useRoutePhotoCounts();
-  const visitedRoutes = routeSeed.filter((route) => states[route.id]?.visitedAt);
   const mapModel = buildFootprintMapModel(routeSeed, states, routePhotoCounts);
 
   return (
@@ -20,32 +18,17 @@ export default function FootprintScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>足迹地图</Text>
         <Text style={styles.subtitle}>
-          把去过的路线落到高德地图上，点亮你从西安开出去的地方。
+          这里只看你去过的地点点位，不再铺路线清单；打开地图就能看到从西安点亮过哪些地方。
         </Text>
 
         <FootprintMapView model={mapModel} />
 
-        {visitedRoutes.length === 0 ? (
-          <EmptyState title="还没有足迹" body="在路线详情里点“标记去过”，这里会显示真实地图点位。" />
-        ) : (
-          visitedRoutes.map((route) => {
-            const groups = groupRoutePhotosByStop(route, states[route.id]);
-            return (
-              <View key={route.id} style={styles.route}>
-                <Text style={styles.routeTitle}>{route.title}</Text>
-                <Text style={styles.visitedAt}>去过：{states[route.id]?.visitedAt}</Text>
-                {groups.map((group, index) => (
-                  <View key={group.stop?.id ?? "unassigned"} style={styles.stopRow}>
-                    <Text style={styles.stop}>
-                      {group.stop ? `${index + 1}. ${group.stop.name}` : "未归类照片"}
-                    </Text>
-                    <Text style={styles.photoCount}>{group.photos.length} 张</Text>
-                  </View>
-                ))}
-              </View>
-            );
-          })
-        )}
+        {mapModel.markers.length === 0 ? (
+          <EmptyState
+            title="还没有足迹"
+            body="在路线详情里标记“去过”，这里会显示真实地图点位。"
+          />
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -70,42 +53,5 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 15,
     lineHeight: 22
-  },
-  route: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    gap: spacing.sm
-  },
-  routeTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "800"
-  },
-  visitedAt: {
-    color: colors.accent,
-    fontWeight: "700"
-  },
-  stopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md
-  },
-  stop: {
-    flex: 1,
-    color: colors.muted,
-    lineHeight: 20
-  },
-  photoCount: {
-    color: colors.primaryDark,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    fontSize: 12,
-    fontWeight: "800"
   }
 });

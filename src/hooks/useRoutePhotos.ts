@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  routePhotoLibrary,
+  getRoutePhotoLibrary,
   type LocalRoutePhoto,
   type PhotoCountByRoute
 } from "@/services/photoLibrary";
@@ -15,7 +15,7 @@ export function useRoutePhotos(routeId: string | undefined) {
       return;
     }
 
-    routePhotoLibrary
+    getRoutePhotoLibrary()
       .listRoutePhotos(routeId)
       .then((nextPhotos) => {
         setPhotos(nextPhotos);
@@ -28,7 +28,7 @@ export function useRoutePhotos(routeId: string | undefined) {
 
   useEffect(() => {
     refresh();
-    return routePhotoLibrary.subscribe(refresh);
+    return getRoutePhotoLibrary().subscribe(refresh);
   }, [refresh]);
 
   const addPhotos = useCallback(
@@ -37,7 +37,7 @@ export function useRoutePhotos(routeId: string | undefined) {
         return [];
       }
 
-      const added = await routePhotoLibrary.addRoutePhotos(routeId, stopId, files);
+      const added = await getRoutePhotoLibrary().addRoutePhotos(routeId, stopId, files);
       refresh();
       return added;
     },
@@ -56,12 +56,12 @@ export function useRoutePhotoCounts() {
   const [counts, setCounts] = useState<PhotoCountByRoute>({});
 
   const refresh = useCallback(() => {
-    routePhotoLibrary.countPhotosByRoute().then(setCounts).catch(() => setCounts({}));
+    getRoutePhotoLibrary().countPhotosByRoute().then(setCounts).catch(() => setCounts({}));
   }, []);
 
   useEffect(() => {
     refresh();
-    return routePhotoLibrary.subscribe(refresh);
+    return getRoutePhotoLibrary().subscribe(refresh);
   }, [refresh]);
 
   return counts;
