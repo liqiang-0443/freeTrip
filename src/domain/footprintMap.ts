@@ -43,7 +43,8 @@ const XIAN_CENTER: FootprintCoordinate = {
 
 export function buildFootprintMapModel(
   routes: RouteTemplate[],
-  states: UserRouteStateMap
+  states: UserRouteStateMap,
+  photoCountByRoute: Record<string, number> = {}
 ): FootprintMapModel {
   const visitedRoutes = routes.filter((route) => states[route.id]?.visitedAt);
   const markers = visitedRoutes.flatMap((route) => {
@@ -115,7 +116,11 @@ export function buildFootprintMapModel(
       zoom: markers.length ? 8 : 9
     },
     visitedRouteCount: visitedRoutes.length,
-    photoCount: visitedRoutes.reduce((sum, route) => sum + (states[route.id]?.photos?.length ?? 0), 0)
+    photoCount: visitedRoutes.reduce(
+      (sum, route) =>
+        sum + (states[route.id]?.photos?.length ?? 0) + (photoCountByRoute[route.id] ?? 0),
+      0
+    )
   };
 }
 

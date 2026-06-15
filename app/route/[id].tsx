@@ -1,9 +1,10 @@
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Image,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +19,7 @@ import { routeSeed } from "@/data/routes.seed";
 import { summarizeRouteStops } from "@/domain/routes";
 import { groupRoutePhotosByStop } from "@/domain/travelJournal";
 import { formatRuntimeDriving, useRouteRuntimeInfo } from "@/hooks/useRouteRuntimeInfo";
+import { useRoutePhotos } from "@/hooks/useRoutePhotos";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
 import { buildRouteFromDiscoveredPoi } from "@/services/amapPoiSearch";
 import { buildAmapNavigationUri } from "@/services/amapRoutes";
@@ -57,6 +59,8 @@ export default function RouteDetailScreen() {
   const runtimeDriving = route ? formatRuntimeDriving(runtime.infoByRouteId[route.id]) : undefined;
   const runtimeError = route ? runtime.errorByRouteId[route.id] : undefined;
   const [selectedPhotoStopId, setSelectedPhotoStopId] = useState<string | undefined>();
+  const routePhotos = useRoutePhotos(route && !isDiscoveredRoute ? route.id : undefined);
+  const webPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   const tomorrow = useMemo(() => {
     const date = new Date();
@@ -86,10 +90,26 @@ export default function RouteDetailScreen() {
     selectedPhotoStopId ??
     selectedRoute.stops.find((stop) => stop.role === "destination")?.id ??
     sortedStops[0]?.id;
-  const photoGroups = groupRoutePhotosByStop(selectedRoute, state);
+  const localPhotos = routePhotos.photos.map((photo) => ({
+    id: photo.id,
+    uri: photo.dataUrl,
+    addedAt: photo.addedAt,
+    stopId: photo.stopId
+  }));
+  const mergedState = {
+    ...(state ?? { routeId: selectedRoute.id }),
+    photos: [...(state?.photos ?? []), ...localPhotos]
+  };
+  const photoGroups = groupRoutePhotosByStop(selectedRoute, mergedState);
+  const totalPhotoCount = mergedState.photos.length;
 
   async function addPhoto() {
     if (isDiscoveredRoute) {
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      webPhotoInputRef.current?.click();
       return;
     }
 
@@ -106,6 +126,14 @@ export default function RouteDetailScreen() {
         stopId: defaultPhotoStopId
       });
     }
+  }
+
+  async function addWebPhotos(files: FileList | null) {
+    if (!files?.length || isDiscoveredRoute) {
+      return;
+    }
+
+    await routePhotos.addPhotos(defaultPhotoStopId, files);
   }
 
   async function openAmapNavigation() {
@@ -214,6 +242,19 @@ export default function RouteDetailScreen() {
         </View>
 
         <View style={styles.panel}>
+          {Platform.OS === "web" ? (
+            <input
+              ref={webPhotoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={(event) => {
+                void addWebPhotos(event.currentTarget.files);
+                event.currentTarget.value = "";
+              }}
+            />
+          ) : null}
           <View style={styles.photoHeader}>
             <Text style={styles.sectionTitle}>照片</Text>
             <Pressable style={styles.smallButton} onPress={addPhoto}>
@@ -237,7 +278,8 @@ export default function RouteDetailScreen() {
               );
             })}
           </ScrollView>
-          {state?.photos?.length ? (
+          {routePhotos.error ? <Text style={styles.warning}>{routePhotos.error}</Text> : null}
+          {totalPhotoCount ? (
             <View style={styles.photoGroups}>
               {photoGroups.map((group) => (
                 <View key={group.stop?.id ?? "unassigned"} style={styles.photoGroup}>

@@ -49,4 +49,21 @@ describe("buildFootprintMapModel", () => {
     expect(model.center).toEqual({ latitude: 34.341575, longitude: 108.93977 });
     expect(model.initialCamera.zoom).toBe(9);
   });
+
+  it("includes browser-local photo counts in the footprint total", () => {
+    const model = buildFootprintMapModel(
+      routeSeed,
+      {
+        "xian-taiping-forest-one-day": {
+          routeId: "xian-taiping-forest-one-day",
+          visitedAt: "2026-06-01"
+        }
+      },
+      {
+        "xian-taiping-forest-one-day": 2
+      }
+    );
+
+    expect(model.photoCount).toBe(2);
+  });
 });

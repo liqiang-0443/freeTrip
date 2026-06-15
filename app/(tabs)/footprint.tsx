@@ -5,13 +5,15 @@ import { FootprintMapView } from "@/components/FootprintMapView";
 import { routeSeed } from "@/data/routes.seed";
 import { buildFootprintMapModel } from "@/domain/footprintMap";
 import { groupRoutePhotosByStop } from "@/domain/travelJournal";
+import { useRoutePhotoCounts } from "@/hooks/useRoutePhotos";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
 import { colors, radius, spacing } from "@/styles/theme";
 
 export default function FootprintScreen() {
   const { states } = useUserRoutes();
+  const routePhotoCounts = useRoutePhotoCounts();
   const visitedRoutes = routeSeed.filter((route) => states[route.id]?.visitedAt);
-  const mapModel = buildFootprintMapModel(routeSeed, states);
+  const mapModel = buildFootprintMapModel(routeSeed, states, routePhotoCounts);
 
   return (
     <SafeAreaView style={styles.safe}>
