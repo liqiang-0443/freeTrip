@@ -4,14 +4,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { FootprintMapView } from "@/components/FootprintMapView";
 import { routeSeed } from "@/data/routes.seed";
 import { buildFootprintMapModel } from "@/domain/footprintMap";
-import { useRoutePhotoCounts } from "@/hooks/useRoutePhotos";
+import { useAllRoutePhotos } from "@/hooks/useRoutePhotos";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
 import { colors, radius, spacing } from "@/styles/theme";
 
 export default function FootprintScreen() {
   const { states } = useUserRoutes();
-  const routePhotoCounts = useRoutePhotoCounts();
-  const mapModel = buildFootprintMapModel(routeSeed, states, routePhotoCounts);
+  const routePhotos = useAllRoutePhotos();
+  const mapModel = buildFootprintMapModel(routeSeed, states, {
+    routePhotos: routePhotos.map((photo) => ({
+      id: photo.id,
+      routeId: photo.routeId,
+      stopId: photo.stopId,
+      uri: photo.dataUrl,
+      addedAt: photo.addedAt
+    }))
+  });
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>

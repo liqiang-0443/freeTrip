@@ -14,7 +14,17 @@ export type FootprintMarker = {
   stopName: string;
   visitedAt: string;
   photoCount: number;
+  photoPreviewUri?: string;
+  photos: FootprintRoutePhoto[];
   coordinate: FootprintCoordinate;
+};
+
+export type FootprintRoutePhoto = {
+  id: string;
+  routeId: string;
+  stopId?: string;
+  uri: string;
+  addedAt?: string;
 };
 
 export type FootprintPolyline = {
@@ -41,11 +51,22 @@ const SHAANXI_CENTER: FootprintCoordinate = {
   longitude: 108.870143
 };
 
+type FootprintMapOptions = {
+  photoCountByRoute?: Record<string, number>;
+  routePhotos?: FootprintRoutePhoto[];
+};
+
 export function buildFootprintMapModel(
   routes: RouteTemplate[],
   states: UserRouteStateMap,
-  photoCountByRoute: Record<string, number> = {}
+  optionsOrPhotoCounts: Record<string, number> | FootprintMapOptions = {}
 ): FootprintMapModel {
+  const options = normalizeOptions(optionsOrPhotoCounts);
+  const routePhotos = options.routePhotos ?? [];
+  const routePhotoCounts = routePhotos.reduce<Record<string, number>>((counts, photo) => {
+    counts[photo.routeId] = (counts[photo.routeId] ?? 0) + 1;
+    return counts;
+  }, {});
   const visitedRoutes = routes.filter((route) => states[route.id]?.visitedAt);
   const markers = visitedRoutes.flatMap((route) => {
     const state = states[route.id];
@@ -55,9 +76,22 @@ export function buildFootprintMapModel(
     }
 
     return route.stops.flatMap((stop) => {
-      if (!isFiniteCoordinate(stop)) {
+      if (!isFootprintStop(stop) || !isFiniteCoordinate(stop)) {
         return [];
       }
+
+      const photos = [
+        ...(state.photos ?? [])
+          .filter((photo) => photo.stopId === stop.id)
+          .map((photo) => ({
+            id: photo.id,
+            routeId: route.id,
+            stopId: photo.stopId,
+            uri: photo.uri,
+            addedAt: photo.addedAt
+          })),
+        ...routePhotos.filter((photo) => photo.routeId === route.id && photo.stopId === stop.id)
+      ];
 
       return [
         {
@@ -67,7 +101,9 @@ export function buildFootprintMapModel(
           stopId: stop.id,
           stopName: stop.name,
           visitedAt,
-          photoCount: (state.photos ?? []).filter((photo) => photo.stopId === stop.id).length,
+          photoCount: photos.length,
+          photoPreviewUri: photos[0]?.uri,
+          photos,
           coordinate: {
             latitude: stop.latitude,
             longitude: stop.longitude
@@ -91,10 +127,28 @@ export function buildFootprintMapModel(
     visitedRouteCount: visitedRoutes.length,
     photoCount: visitedRoutes.reduce(
       (sum, route) =>
-        sum + (states[route.id]?.photos?.length ?? 0) + (photoCountByRoute[route.id] ?? 0),
+        sum +
+        (states[route.id]?.photos?.length ?? 0) +
+        (routePhotoCounts[route.id] ?? options.photoCountByRoute?.[route.id] ?? 0),
       0
     )
   };
+}
+
+function normalizeOptions(
+  optionsOrPhotoCounts: Record<string, number> | FootprintMapOptions
+): FootprintMapOptions {
+  if ("routePhotos" in optionsOrPhotoCounts || "photoCountByRoute" in optionsOrPhotoCounts) {
+    return optionsOrPhotoCounts as FootprintMapOptions;
+  }
+
+  return {
+    photoCountByRoute: optionsOrPhotoCounts as Record<string, number>
+  };
+}
+
+function isFootprintStop(stop: { role?: string }) {
+  return stop.role !== "origin" && stop.role !== "return";
 }
 
 function isFiniteCoordinate(stop: { latitude?: number; longitude?: number }): stop is {

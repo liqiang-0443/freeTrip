@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { FootprintMapModel, FootprintMarker } from "@/domain/footprintMap";
 import { getAmapWebKey, loadAmapWebSdk, type AmapWebApi } from "@/services/amapWebLoader";
@@ -20,6 +20,16 @@ export function FootprintMapView({ model, fullScreen = false }: FootprintMapView
   const [selectedMarker, setSelectedMarker] = useState<FootprintMarker | undefined>(
     model.markers[0]
   );
+
+  useEffect(() => {
+    setSelectedMarker((current) => {
+      if (!current) {
+        return model.markers[0];
+      }
+
+      return model.markers.find((marker) => marker.id === current.id) ?? model.markers[0];
+    });
+  }, [model.markers]);
 
   useEffect(() => {
     if (!getAmapWebKey()) {
@@ -64,16 +74,17 @@ export function FootprintMapView({ model, fullScreen = false }: FootprintMapView
       viewMode: "2D"
     });
     const overlays = model.markers.map((marker) => {
-        const overlay = new amap.Marker({
-          position: [marker.coordinate.longitude, marker.coordinate.latitude],
-          title: marker.stopName,
-          anchor: "bottom-center",
-          offset: new amap.Pixel(0, 0)
-        });
-        overlay.on?.("click", () => setSelectedMarker(marker));
-        overlay.setMap(map);
-        return overlay;
+      const overlay = new amap.Marker({
+        position: [marker.coordinate.longitude, marker.coordinate.latitude],
+        title: marker.stopName,
+        anchor: "bottom-center",
+        offset: new amap.Pixel(0, 0),
+        content: buildMarkerContent(marker)
       });
+      overlay.on?.("click", () => setSelectedMarker(marker));
+      overlay.setMap(map);
+      return overlay;
+    });
 
     return () => {
       overlays.forEach((overlay) => overlay.setMap(null));
@@ -94,7 +105,7 @@ export function FootprintMapView({ model, fullScreen = false }: FootprintMapView
           />
           <Text style={styles.title}>{statusLabels[status]}</Text>
           <Text style={styles.body}>
-            已记录 {model.visitedRouteCount} 条路线、{model.markers.length} 个地点。
+            已记录 {model.visitedRouteCount} 条路线，{model.markers.length} 个地点。
           </Text>
           {message ? <Text style={styles.hint}>{message}</Text> : null}
         </View>
@@ -116,6 +127,22 @@ export function FootprintMapView({ model, fullScreen = false }: FootprintMapView
               {selectedMarker.routeTitle} · 去过 {selectedMarker.visitedAt} ·{" "}
               {selectedMarker.photoCount} 张照片
             </Text>
+            {selectedMarker.photos.length ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.photoStrip}
+              >
+                {selectedMarker.photos.map((photo) => (
+                  <img
+                    key={photo.id}
+                    src={photo.uri}
+                    alt={selectedMarker.stopName}
+                    style={calloutPhotoStyle}
+                  />
+                ))}
+              </ScrollView>
+            ) : null}
           </View>
         </View>
       ) : model.markers.length === 0 ? (
@@ -151,11 +178,39 @@ function Metric({ value, label }: { value: number; label: string }) {
   );
 }
 
+function buildMarkerContent(marker: FootprintMarker) {
+  if (marker.photoPreviewUri) {
+    return `
+      <div style="width:48px;height:48px;border-radius:24px;overflow:hidden;border:3px solid #fff;box-shadow:0 10px 22px rgba(15,63,50,.28);background:#fff;position:relative;">
+        <img src="${escapeHtmlAttribute(marker.photoPreviewUri)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />
+        <span style="position:absolute;right:2px;bottom:2px;width:13px;height:13px;border-radius:50%;background:#2f7d55;border:2px solid #fff;"></span>
+      </div>
+    `;
+  }
+
+  return `
+    <div style="width:28px;height:28px;border-radius:50%;background:#2f7d55;border:4px solid #fff;box-shadow:0 9px 18px rgba(15,63,50,.25);"></div>
+  `;
+}
+
+function escapeHtmlAttribute(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
 const mapElementStyle = {
   position: "absolute",
   inset: 0,
   width: "100%",
   height: "100%"
+} satisfies React.CSSProperties;
+
+const calloutPhotoStyle = {
+  width: 78,
+  height: 78,
+  borderRadius: 10,
+  objectFit: "cover",
+  background: "#eef5ef",
+  display: "block"
 } satisfies React.CSSProperties;
 
 const styles = StyleSheet.create({
@@ -232,7 +287,7 @@ const styles = StyleSheet.create({
     right: spacing.md,
     bottom: spacing.md,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: spacing.md,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: radius.md,
@@ -258,5 +313,9 @@ const styles = StyleSheet.create({
   stopMeta: {
     color: colors.muted,
     lineHeight: 18
+  },
+  photoStrip: {
+    gap: spacing.sm,
+    paddingTop: spacing.xs
   }
 });

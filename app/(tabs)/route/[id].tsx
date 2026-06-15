@@ -425,6 +425,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: spacing.lg,
+    paddingBottom: 120,
     gap: spacing.lg
   },
   missing: {

@@ -133,3 +133,18 @@ export function useRoutePhotoCounts() {
 
   return counts;
 }
+
+export function useAllRoutePhotos() {
+  const [photos, setPhotos] = useState<LocalRoutePhoto[]>([]);
+
+  const refresh = useCallback(() => {
+    getRoutePhotoLibrary().listAllPhotos().then(setPhotos).catch(() => setPhotos([]));
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    return getRoutePhotoLibrary().subscribe(refresh);
+  }, [refresh]);
+
+  return photos;
+}

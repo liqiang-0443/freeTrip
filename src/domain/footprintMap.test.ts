@@ -27,6 +27,8 @@ describe("buildFootprintMapModel", () => {
 
     expect(model.visitedRouteCount).toBe(1);
     expect(model.photoCount).toBe(1);
+    expect(model.markers.map((marker) => marker.stopId)).not.toContain("origin");
+    expect(model.markers.map((marker) => marker.stopId)).not.toContain("return");
     expect(model.markers.map((marker) => marker.stopName)).toContain("太平国家森林公园");
     expect(model.markers.find((marker) => marker.stopId === "main")).toMatchObject({
       routeId: "xian-taiping-forest-one-day",
@@ -65,5 +67,39 @@ describe("buildFootprintMapModel", () => {
     );
 
     expect(model.photoCount).toBe(2);
+  });
+
+  it("attaches stop photos to footprint markers", () => {
+    const model = buildFootprintMapModel(
+      routeSeed,
+      {
+        "xian-taiping-forest-one-day": {
+          routeId: "xian-taiping-forest-one-day",
+          visitedAt: "2026-06-01"
+        }
+      },
+      {
+        routePhotos: [
+          {
+            id: "local-photo-1",
+            routeId: "xian-taiping-forest-one-day",
+            stopId: "main",
+            uri: "data:image/png;base64,abc",
+            addedAt: "2026-06-02T08:00:00.000Z"
+          }
+        ]
+      }
+    );
+
+    expect(model.markers.find((marker) => marker.stopId === "main")).toMatchObject({
+      photoCount: 1,
+      photoPreviewUri: "data:image/png;base64,abc",
+      photos: [
+        {
+          id: "local-photo-1",
+          uri: "data:image/png;base64,abc"
+        }
+      ]
+    });
   });
 });

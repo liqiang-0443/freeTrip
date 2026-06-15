@@ -18,6 +18,7 @@ export type PhotoLibrary = {
     files: ArrayLike<File>
   ) => Promise<LocalRoutePhoto[]>;
   listRoutePhotos: (routeId: string) => Promise<LocalRoutePhoto[]>;
+  listAllPhotos: () => Promise<LocalRoutePhoto[]>;
   countPhotosByRoute: () => Promise<PhotoCountByRoute>;
   deleteRoutePhoto: (photoId: string) => Promise<void>;
   subscribe: (listener: () => void) => () => void;
@@ -73,6 +74,11 @@ export function createIndexedDbPhotoLibrary(): PhotoLibrary {
       return readByRouteId(db, routeId);
     },
 
+    async listAllPhotos() {
+      const db = await openPhotoDb();
+      return readAllPhotos(db);
+    },
+
     async countPhotosByRoute() {
       const db = await openPhotoDb();
       const photos = await readAllPhotos(db);
@@ -123,6 +129,10 @@ export function createMemoryPhotoLibrary(): PhotoLibrary {
       return Array.from(photos.values()).filter((photo) => photo.routeId === routeId);
     },
 
+    async listAllPhotos() {
+      return Array.from(photos.values());
+    },
+
     async countPhotosByRoute() {
       return Array.from(photos.values()).reduce<PhotoCountByRoute>((counts, photo) => {
         counts[photo.routeId] = (counts[photo.routeId] ?? 0) + 1;
@@ -171,6 +181,10 @@ export function createLocalStoragePhotoLibrary(): PhotoLibrary {
       return readLocalStoragePhotos(key).filter((photo) => photo.routeId === routeId);
     },
 
+    async listAllPhotos() {
+      return readLocalStoragePhotos(key);
+    },
+
     async countPhotosByRoute() {
       return readLocalStoragePhotos(key).reduce<PhotoCountByRoute>((counts, photo) => {
         counts[photo.routeId] = (counts[photo.routeId] ?? 0) + 1;
@@ -201,6 +215,9 @@ function createUnsupportedPhotoLibrary(): PhotoLibrary {
       throw new Error("当前浏览器不支持 IndexedDB，无法保存本地照片。");
     },
     async listRoutePhotos() {
+      return [];
+    },
+    async listAllPhotos() {
       return [];
     },
     async countPhotosByRoute() {
