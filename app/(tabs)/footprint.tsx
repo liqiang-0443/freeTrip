@@ -1,40 +1,30 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
+import { FootprintMapView } from "@/components/FootprintMapView";
 import { routeSeed } from "@/data/routes.seed";
-import { buildFootprintSummary, groupRoutePhotosByStop } from "@/domain/travelJournal";
+import { buildFootprintMapModel } from "@/domain/footprintMap";
+import { groupRoutePhotosByStop } from "@/domain/travelJournal";
 import { useUserRoutes } from "@/hooks/useUserRoutes";
 import { colors, radius, spacing } from "@/styles/theme";
 
 export default function FootprintScreen() {
   const { states } = useUserRoutes();
   const visitedRoutes = routeSeed.filter((route) => states[route.id]?.visitedAt);
-  const summary = buildFootprintSummary(routeSeed, states);
+  const mapModel = buildFootprintMapModel(routeSeed, states);
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>足迹地图</Text>
         <Text style={styles.subtitle}>
-          第一版先用路线足迹列表承载记录，后续接入高德地图后会展示真实地图点位。
+          把去过的路线落到高德地图上，点亮你从西安开出去的地方。
         </Text>
 
-        <View style={styles.mapPanel}>
-          <Text style={styles.mapTitle}>西安周边足迹</Text>
-          <View style={styles.summaryRow}>
-            <SummaryMetric value={summary.visitedRouteCount} label="路线" />
-            <SummaryMetric value={summary.visitedStopCount} label="停靠点" />
-            <SummaryMetric value={summary.photoCount} label="照片" />
-          </View>
-          {summary.unassignedPhotoCount > 0 ? (
-            <Text style={styles.mapHint}>{summary.unassignedPhotoCount} 张照片还没有归属停靠点</Text>
-          ) : (
-            <Text style={styles.mapHint}>按路线和停靠点沉淀你的自驾记录</Text>
-          )}
-        </View>
+        <FootprintMapView model={mapModel} />
 
         {visitedRoutes.length === 0 ? (
-          <EmptyState title="还没有足迹" body="在路线详情里点“标记去过”，这里会显示你的自驾记录。" />
+          <EmptyState title="还没有足迹" body="在路线详情里点“标记去过”，这里会显示真实地图点位。" />
         ) : (
           visitedRoutes.map((route) => {
             const groups = groupRoutePhotosByStop(route, states[route.id]);
@@ -59,15 +49,6 @@ export default function FootprintScreen() {
   );
 }
 
-function SummaryMetric({ value, label }: { value: number; label: string }) {
-  return (
-    <View style={styles.summaryMetric}>
-      <Text style={styles.mapCount}>{value}</Text>
-      <Text style={styles.mapHint}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -87,41 +68,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 15,
     lineHeight: 22
-  },
-  mapPanel: {
-    minHeight: 180,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.md,
-    padding: spacing.lg
-  },
-  mapTitle: {
-    color: colors.primaryDark,
-    fontWeight: "800"
-  },
-  summaryRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    alignSelf: "stretch"
-  },
-  summaryMetric: {
-    flex: 1,
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.md
-  },
-  mapCount: {
-    color: colors.primary,
-    fontSize: 30,
-    fontWeight: "900"
-  },
-  mapHint: {
-    color: colors.muted
   },
   route: {
     backgroundColor: colors.surface,
