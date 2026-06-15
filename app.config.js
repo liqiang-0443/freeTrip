@@ -25,6 +25,11 @@ module.exports = {
       package: "com.liqiang.freetrip",
       permissions: ["READ_MEDIA_IMAGES", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
     },
+    web: {
+      bundler: "metro",
+      output: "static",
+      favicon: "./public/icons/icon.svg"
+    },
     plugins: [
       "expo-router",
       [
