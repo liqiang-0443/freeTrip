@@ -8,9 +8,10 @@ import { colors, radius, spacing } from "@/styles/theme";
 
 type FootprintMapViewProps = {
   model: FootprintMapModel;
+  fullScreen?: boolean;
 };
 
-export function FootprintMapView({ model }: FootprintMapViewProps) {
+export function FootprintMapView({ model, fullScreen = false }: FootprintMapViewProps) {
   const privacyReady = configureAmapNativePrivacy();
   const [selectedMarker, setSelectedMarker] = useState<FootprintMarker | undefined>(
     model.markers[0]
@@ -27,7 +28,7 @@ export function FootprintMapView({ model }: FootprintMapViewProps) {
   }
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, fullScreen ? styles.fullScreen : null]}>
       <MapView
         style={styles.map}
         initialCameraPosition={model.initialCamera}
@@ -110,6 +111,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border
+  },
+  fullScreen: {
+    flex: 1,
+    minHeight: undefined,
+    borderRadius: 0,
+    borderWidth: 0
   },
   unavailable: {
     alignItems: "center",

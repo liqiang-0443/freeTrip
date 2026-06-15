@@ -1,4 +1,4 @@
-const CACHE_NAME = "freetrip-pwa-v1";
+const CACHE_NAME = "freetrip-pwa-v2";
 const APP_SHELL = ["/", "/manifest.json", "/icons/icon.svg", "/icons/maskable-icon.svg"];
 
 self.addEventListener("install", (event) => {

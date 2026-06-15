@@ -7,9 +7,10 @@ import { colors, radius, spacing } from "@/styles/theme";
 
 type FootprintMapViewProps = {
   model: FootprintMapModel;
+  fullScreen?: boolean;
 };
 
-export function FootprintMapView({ model }: FootprintMapViewProps) {
+export function FootprintMapView({ model, fullScreen = false }: FootprintMapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [amap, setAmap] = useState<AmapWebApi | undefined>();
   const [status, setStatus] = useState<"missing-key" | "loading" | "loaded" | "failed">(
@@ -81,7 +82,7 @@ export function FootprintMapView({ model }: FootprintMapViewProps) {
   }, [amap, model]);
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, fullScreen ? styles.fullScreen : null]}>
       <div ref={containerRef} style={mapElementStyle} />
 
       {status === "loaded" ? null : (
@@ -99,7 +100,7 @@ export function FootprintMapView({ model }: FootprintMapViewProps) {
         </View>
       )}
 
-      <View style={styles.summary}>
+      <View style={[styles.summary, fullScreen ? styles.summaryFullScreen : null]}>
         <Metric value={model.markers.length} label="地点" />
         <Metric value={model.photoCount} label="照片" />
       </View>
@@ -167,6 +168,12 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative"
   },
+  fullScreen: {
+    flex: 1,
+    minHeight: undefined,
+    borderRadius: 0,
+    borderWidth: 0
+  },
   statusPanel: {
     position: "absolute",
     inset: 0,
@@ -198,6 +205,9 @@ const styles = StyleSheet.create({
     right: spacing.md,
     flexDirection: "row",
     gap: spacing.sm
+  },
+  summaryFullScreen: {
+    top: 126
   },
   metric: {
     flex: 1,

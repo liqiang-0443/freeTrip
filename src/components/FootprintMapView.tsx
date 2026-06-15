@@ -5,11 +5,12 @@ import { colors, radius, spacing } from "@/styles/theme";
 
 type FootprintMapViewProps = {
   model: FootprintMapModel;
+  fullScreen?: boolean;
 };
 
-export function FootprintMapView({ model }: FootprintMapViewProps) {
+export function FootprintMapView({ model, fullScreen = false }: FootprintMapViewProps) {
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, fullScreen ? styles.fullScreen : null]}>
       <Ionicons name="map" size={28} color={colors.primaryDark} />
       <Text style={styles.title}>足迹地图准备中</Text>
       <Text style={styles.body}>
@@ -30,6 +31,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing.sm,
     padding: spacing.lg
+  },
+  fullScreen: {
+    flex: 1,
+    minHeight: undefined,
+    borderRadius: 0,
+    borderWidth: 0
   },
   title: {
     color: colors.text,

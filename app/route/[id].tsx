@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Image,
   Linking,
@@ -60,7 +60,6 @@ export default function RouteDetailScreen() {
   const runtimeError = route ? runtime.errorByRouteId[route.id] : undefined;
   const [selectedPhotoStopId, setSelectedPhotoStopId] = useState<string | undefined>();
   const routePhotos = useRoutePhotos(route && !isDiscoveredRoute ? route.id : undefined);
-  const webPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   const tomorrow = useMemo(() => {
     const date = new Date();
@@ -109,7 +108,6 @@ export default function RouteDetailScreen() {
     }
 
     if (Platform.OS === "web") {
-      webPhotoInputRef.current?.click();
       return;
     }
 
@@ -244,11 +242,10 @@ export default function RouteDetailScreen() {
         <View style={styles.panel}>
           {Platform.OS === "web" ? (
             <input
-              ref={webPhotoInputRef}
               type="file"
               accept="image/*"
               multiple
-              style={{ display: "none" }}
+              style={webInlineFileInputStyle}
               onChange={(event) => {
                 void addWebPhotos(event.currentTarget.files);
                 event.currentTarget.value = "";
@@ -290,7 +287,7 @@ export default function RouteDetailScreen() {
                   {group.photos.length ? (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photos}>
                       {group.photos.map((photo) => (
-                        <Image key={photo.id} source={{ uri: photo.uri }} style={styles.photo} />
+                        <RoutePhotoImage key={photo.id} uri={photo.uri} />
                       ))}
                     </ScrollView>
                   ) : (
@@ -332,6 +329,14 @@ function ActionButton({
       <Text style={styles.actionText}>{label}</Text>
     </Pressable>
   );
+}
+
+function RoutePhotoImage({ uri }: { uri: string }) {
+  if (Platform.OS === "web") {
+    return <img src={uri} alt="" style={webPhotoImageStyle} />;
+  }
+
+  return <Image source={{ uri }} style={styles.photo} />;
 }
 
 function getRuntimeStatusText(
@@ -393,6 +398,25 @@ const durationLabels = {
   one_day: "今天一日",
   weekend: "周末两日"
 };
+
+const webInlineFileInputStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+  border: "1px solid #d9dfd8",
+  borderRadius: 8,
+  padding: 10,
+  background: "#eef5ef",
+  color: "#204d38"
+} satisfies React.CSSProperties;
+
+const webPhotoImageStyle = {
+  width: 112,
+  height: 112,
+  borderRadius: 8,
+  objectFit: "cover",
+  background: "#eef5ef",
+  display: "block"
+} satisfies React.CSSProperties;
 
 const styles = StyleSheet.create({
   safe: {
